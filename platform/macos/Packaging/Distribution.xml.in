@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>NAKL</title>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+    <allowed-os-versions>
+        <os-version min="13.0"/>
+    </allowed-os-versions>
+    <choices-outline>
+        <line choice="default"/>
+    </choices-outline>
+    <choice id="default" visible="false">
+        <pkg-ref id="com.nakl.inputmethod.NAKL.pkg"/>
+    </choice>
+    <pkg-ref
+        id="com.nakl.inputmethod.NAKL.pkg"
+        version="@VERSION@"
+        auth="Root"
+        onConclusion="RequireLogout">NAKL-component.pkg</pkg-ref>
+</installer-gui-script>

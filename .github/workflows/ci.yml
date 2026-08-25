@@ -35,6 +35,9 @@ jobs:
       - run: ./build/ffi-smoke
       - run: make -C legacy/oracle
       - run: test "$(build/legacy-oracle telex tieengs)" = "tiếng"
+      - run: rustup target add x86_64-apple-darwin
       - run: swift format lint --recursive --strict platform/macos/Sources platform/macos/Tests
+      - run: swift format lint --strict platform/macos/scripts/input-source-tool.swift
+      - run: find platform/macos/scripts -name '*.sh' -exec sh -n {} \;
       - run: swift test --package-path platform/macos
-      - run: platform/macos/scripts/build-app.sh
+      - run: platform/macos/scripts/package-app.sh

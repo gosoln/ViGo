@@ -306,6 +306,12 @@ impl CompositionSession {
                 self.word.clear();
                 Action::PassThrough
             }
+            InputEvent::Text(character)
+                if !character.is_alphabetic() && modifier_for(self.method, character).is_none() =>
+            {
+                self.word.clear();
+                Action::PassThrough
+            }
             InputEvent::Text(character) if modifier_for(self.method, character).is_some() => {
                 let modifier = modifier_for(self.method, character).expect("guarded by is_some");
                 if let Some(action) = self.apply_modifier(modifier) {

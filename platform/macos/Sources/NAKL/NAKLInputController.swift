@@ -35,26 +35,24 @@ final class NAKLInputController: IMKInputController {
       return false
     }
 
-    let commandModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .function]
-    guard event.modifierFlags.intersection(commandModifiers).isEmpty else {
+    let normalizedEvent = MacKeyEventNormalizer.normalize(
+      keyCode: event.keyCode,
+      modifierFlags: event.modifierFlags,
+      characters: event.characters,
+      method: activeConfiguration?.method ?? .telex
+    )
+    switch normalizedEvent {
+    case .boundary:
       resetComposition()
       return false
-    }
-
-    if event.keyCode == 51 {
+    case .backspace:
       _ = coreSession.process(.backspace)
       return false
+    case .text:
+      break
     }
 
-    guard let characters = event.characters,
-      characters.unicodeScalars.count == 1,
-      let scalar = characters.unicodeScalars.first
-    else {
-      resetComposition()
-      return false
-    }
-
-    switch coreSession.process(.text(scalar)) {
+    switch coreSession.process(normalizedEvent) {
     case .passThrough:
       return false
     case .replaceBefore(let deleteScalars, let insert):

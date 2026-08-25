@@ -1,7 +1,7 @@
 import Foundation
 import NAKLCoreBridge
 
-enum CoreEvent {
+enum CoreEvent: Equatable {
   case text(Unicode.Scalar)
   case boundary
   case backspace

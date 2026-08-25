@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -43,5 +44,31 @@ func replacementRangesUseUTF16Offsets() {
       deletingScalarCount: 1,
       precedingText: "ế"
     ) == NSRange(location: 1, length: 1)
+  )
+}
+
+@Test("macOS key events normalize to semantic core events")
+func macOSKeyEventsNormalizeToCoreEvents() {
+  #expect(normalized(keyCode: 123, characters: "\u{F702}") == .boundary)
+  #expect(normalized(keyCode: 117, characters: "\u{F728}") == .boundary)
+  #expect(normalized(keyCode: 51, characters: "\u{08}") == .backspace)
+  #expect(normalized(keyCode: 0, characters: ".") == .boundary)
+  #expect(normalized(keyCode: 0, characters: "1") == .boundary)
+  #expect(normalized(keyCode: 0, characters: "1", method: .vni) == .text("1"))
+  #expect(normalized(keyCode: 0, modifiers: .command, characters: "a") == .boundary)
+  #expect(normalized(keyCode: 0, characters: "a") == .text("a"))
+}
+
+private func normalized(
+  keyCode: UInt16,
+  modifiers: NSEvent.ModifierFlags = [],
+  characters: String?,
+  method: TypingMethod = .telex
+) -> CoreEvent {
+  MacKeyEventNormalizer.normalize(
+    keyCode: keyCode,
+    modifierFlags: modifiers,
+    characters: characters,
+    method: method
   )
 }

@@ -14,6 +14,10 @@ let package = Package(
     platforms: [.macOS(.v13)],
     products: [
         .executable(name: "NAKL", targets: ["NAKL"]),
+        .executable(
+            name: "NAKLCompatibilityFixture",
+            targets: ["NAKLCompatibilityFixture"]
+        ),
     ],
     targets: [
         .target(
@@ -28,6 +32,7 @@ let package = Package(
                 .unsafeFlags([coreLibrary]),
             ]
         ),
+        .executableTarget(name: "NAKLCompatibilityFixture"),
         .testTarget(name: "NAKLTests", dependencies: ["NAKL"]),
     ]
 )

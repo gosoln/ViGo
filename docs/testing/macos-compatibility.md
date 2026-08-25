@@ -1,0 +1,33 @@
+# macOS Compatibility Matrix
+
+Use only the synthetic strings below in fresh, unsaved documents. Record the test ID, PASS/FAIL/BLOCKED, application version, macOS build, and NAKL commit. Never record arbitrary typed text, secure-field contents, Console logs, or network traces.
+
+## Activation Preflight
+
+After the first local install, log out and back in. Keep `/Applications/NAKL.app` (legacy 0.2) closed, then run:
+
+```sh
+platform/macos/scripts/input-source-tool.swift select
+swift run --package-path platform/macos NAKLCompatibilityFixture
+```
+
+Restore ABC after testing with `platform/macos/scripts/input-source-tool.swift restore-abc`.
+
+## Required Cases
+
+| ID | Input/action | Expected result |
+| --- | --- | --- |
+| C1 | Telex `tieengs` | `tiếng` in NFC |
+| C2 | Telex `uow` | `ươ` |
+| C3 | Telex `TIEENGS` | `TIẾNG` |
+| C4 | VNI `tie6ng1` | `tiếng` |
+| C5 | `tieengs`, Backspace, `f` | `tiền` |
+| C6 | Expansion `btw` → `by the way`, then `btw ` | `by the way ` |
+| C7 | `xa`, Left Arrow, `a` | Literal `xaa`; no remote replacement |
+| C8 | In `LtestR`, select only `test`, then type `as` | `LáR`; surrounding text is preserved |
+| C9 | `a`, Command+A, Right Arrow, `s` | Literal `as`; stale composition is not reused |
+| C10 | Type `a` in field A, focus field B, type `s` | A is `a`; B is `s` |
+| C11 | Disable NAKL, type `tieengs`, then re-enable | Literal while disabled; C1 after re-enable |
+| C12 | Type `tieengs` in a secure field | Seven raw characters; no crash or replacement |
+
+Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, and C12 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.

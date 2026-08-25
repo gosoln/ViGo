@@ -86,6 +86,15 @@ fn boundary_starts_a_new_composition_session() {
 }
 
 #[test]
+fn punctuation_starts_a_new_composition_session() {
+    let mut session = CompositionSession::new(TypingMethod::Telex);
+
+    assert_eq!(session.process(InputEvent::Text('a')), Action::PassThrough);
+    assert_eq!(session.process(InputEvent::Text('.')), Action::PassThrough);
+    assert_eq!(session.process(InputEvent::Text('s')), Action::PassThrough);
+}
+
+#[test]
 fn telex_double_d_forms_stroked_d() {
     assert_eq!(compose(TypingMethod::Telex, "dd"), "đ");
 }
