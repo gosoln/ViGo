@@ -1,4 +1,2 @@
 # method	input	legacy_output	proposed_output	reason
-telex	hoas	hoá		Old-versus-modern tone placement policy is not yet encoded.
-telex	asz	áz	a	Telex z removal is unreachable in the legacy modifier table.
-vni	a10	á0	a	VNI 0 removal is unreachable in the legacy modifier table.
+# No unresolved M0 behavior cases. Add new disagreements here before changing product fixtures.
