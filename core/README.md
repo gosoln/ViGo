@@ -6,7 +6,7 @@
 CompositionSession::process(InputEvent) -> Action
 ```
 
-The core currently covers the reviewed M0 Telex/VNI corpus, session reset, repeated-modifier behavior, Unicode NFC lookup tables, immutable session configuration, exact text expansion on space, and the initial version-1 C ABI. Native callers populate an opaque `NaklConfig`, create a session that copies its values, then release the builder. It remains an M0 prototype: platform adapters, complete orthographic policy, fuzzing, and release hardening are still pending.
+The core currently covers the reviewed M0 Telex/VNI corpus, session reset, repeated-modifier behavior, Unicode NFC lookup tables, immutable session configuration, exact text expansion on space, deterministic property-style safety coverage, and the initial version-1 C ABI. Native callers populate an opaque `NaklConfig`, create a session that copies its values, then release the builder. It remains an M0 prototype: platform adapters, complete orthographic policy, coverage-guided fuzzing, and release hardening are still pending.
 
 ## Verification
 
