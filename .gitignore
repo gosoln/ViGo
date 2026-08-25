@@ -1,6 +1,9 @@
 # Xcode
 build/*
 /target/
+/fuzz/artifacts/
+/fuzz/corpus/
+/fuzz/target/
 *.pbxuser
 !default.pbxuser
 *.mode1v3

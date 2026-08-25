@@ -6,6 +6,7 @@ NAKL 2.0 modernization is underway. Milestone M0 adds a deterministic Rust compo
 ```sh
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
+cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10
 make -C legacy/oracle
 ```
 
