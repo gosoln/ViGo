@@ -1,0 +1,37 @@
+name: Core CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  native-macos:
+    name: C ABI and legacy oracle
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo build -p nakl-core
+      - run: mkdir -p build && xcrun clang -std=c11 -Wall -Wextra -Werror -Icore/include core/tests/ffi_smoke.c target/debug/libnakl_core.a -o build/ffi-smoke
+      - run: ./build/ffi-smoke
+      - run: make -C legacy/oracle
+      - run: test "$(build/legacy-oracle telex tieengs)" = "tiếng"
