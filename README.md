@@ -1,13 +1,14 @@
 NAKL - Yet another Vietnamese input keyboard for Mac OS
 =======
 
-NAKL 2.0 modernization is underway. Milestone M0 adds a deterministic Rust composition core, reviewed Telex/VNI golden fixtures, a versioned C ABI, and a command-line oracle for the legacy Objective-C behavior. The original macOS app is frozen under `legacy/macos-hook/`; it is not the production base for the cross-platform rewrite.
+NAKL 2.0 modernization is underway. M0 delivered a deterministic Rust composition core, reviewed Telex/VNI fixtures, a versioned C ABI, and a frozen legacy oracle. M1 now includes a minimal native macOS menu-bar/settings shell under `platform/macos/`; the original app remains frozen under `legacy/macos-hook/`.
 
 ```sh
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10
 make -C legacy/oracle
+swift build --package-path platform/macos
 ```
 
 See [the modernization plan](docs/modernization-plan.md), [platform evaluation](docs/research/cross-platform-input-method-platform-evaluation.md), and [architecture decisions](docs/adr/) before contributing to NAKL 2.0.

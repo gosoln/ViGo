@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`core/` is the Rust composition Module and versioned C interface; public behavior is tested in `core/tests/`. Reviewed Telex/VNI fixtures live in `tests/golden/`. `legacy/oracle/` drives the frozen Objective-C `KeyboardHandler` under `legacy/macos-hook/` only to capture characterization data. The adjacent Xcode project is historical reference code, not the new macOS adapter.
+`core/` is the Rust composition Module and versioned C interface; public behavior is tested in `core/tests/`. `platform/macos/` contains the native SwiftUI menu-bar/settings shell. Reviewed fixtures live in `tests/golden/`. `legacy/oracle/` drives the frozen Objective-C snapshot only for characterization data.
 
 Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/design/core-interface.md` before changing the core seam or C ABI. `docs/modernization-plan.md` owns scope, platform order, and release gates.
 
@@ -12,10 +12,9 @@ Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/desi
 - `cargo fmt --all --check` verifies Rust formatting.
 - `cargo clippy --workspace --all-targets -- -D warnings` treats Rust diagnostics as failures.
 - `cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10` and the equivalent `ffi` target run bounded coverage-guided safety campaigns.
+- `swift build --package-path platform/macos` compiles the macOS UI; run `swift format lint --recursive --strict platform/macos/Sources` before review.
 - `make -C legacy/oracle` builds `build/legacy-oracle`; for example, run `build/legacy-oracle telex tieengs`.
 - `cargo build -p nakl-core` emits the Rust library. Compile `core/tests/ffi_smoke.c` against `core/include/nakl_core.h` when changing the ABI.
-
-The checked-in Xcode app still has legacy architecture and macOS 10.5 XIB metadata. Treat it as a behavioral oracle, not the production base.
 
 ## Coding Style & Naming Conventions
 

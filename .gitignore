@@ -4,6 +4,8 @@ build/*
 /fuzz/artifacts/
 /fuzz/corpus/
 /fuzz/target/
+/platform/macos/.build/
+/platform/macos/.swiftpm/
 *.pbxuser
 !default.pbxuser
 *.mode1v3

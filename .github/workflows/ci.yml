@@ -35,3 +35,6 @@ jobs:
       - run: ./build/ffi-smoke
       - run: make -C legacy/oracle
       - run: test "$(build/legacy-oracle telex tieengs)" = "tiếng"
+      - run: swift format lint --recursive --strict platform/macos/Sources platform/macos/Tests
+      - run: swift test --package-path platform/macos
+      - run: platform/macos/scripts/build-app.sh
