@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`core/` is the Rust composition Module and versioned C interface; public behavior is tested in `core/tests/`. Reviewed Telex/VNI fixtures live in `tests/golden/`. `legacy/oracle/` drives the existing Objective-C `KeyboardHandler` only to capture characterization data. Until M0 inventory is complete, the legacy macOS app remains in `NAKL/` with Xcode configuration in `NAKL.xcodeproj/`.
+`core/` is the Rust composition Module and versioned C interface; public behavior is tested in `core/tests/`. Reviewed Telex/VNI fixtures live in `tests/golden/`. `legacy/oracle/` drives the frozen Objective-C `KeyboardHandler` under `legacy/macos-hook/` only to capture characterization data. The adjacent Xcode project is historical reference code, not the new macOS adapter.
 
 Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/design/core-interface.md` before changing the core seam or C ABI. `docs/modernization-plan.md` owns scope, platform order, and release gates.
 

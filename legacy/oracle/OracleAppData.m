@@ -1,4 +1,4 @@
-#import "../../NAKL/AppData.h"
+#import "../macos-hook/NAKL/AppData.h"
 
 @implementation AppData
 

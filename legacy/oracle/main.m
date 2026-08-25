@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "../../NAKL/KeyboardHandler.h"
+#import "../macos-hook/NAKL/KeyboardHandler.h"
 
 enum {
     LegacyMethodVni = 1,
