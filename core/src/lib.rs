@@ -15,6 +15,7 @@ pub enum TypingMethod {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum InputEvent {
     Text(char),
+    Backspace,
     Boundary,
 }
 
@@ -285,6 +286,10 @@ impl CompositionSession {
 
     pub fn process(&mut self, event: InputEvent) -> Action {
         match event {
+            InputEvent::Backspace => {
+                self.word.pop();
+                Action::PassThrough
+            }
             InputEvent::Boundary => {
                 self.word.clear();
                 Action::PassThrough

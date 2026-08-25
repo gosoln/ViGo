@@ -48,6 +48,15 @@ int main(void)
         && action.delete_scalars == 3
         && action.insert_len == sizeof(expected) - 1
         && memcmp(action.insert_ptr, expected, sizeof(expected) - 1) == 0;
+    status = nakl_session_process(
+        session,
+        NAKL_EVENT_BACKSPACE,
+        0,
+        &action
+    );
+    matches = matches
+        && status == NAKL_STATUS_OK
+        && action.kind == NAKL_ACTION_PASS_THROUGH;
     nakl_session_free(session);
     return matches ? 0 : 1;
 }

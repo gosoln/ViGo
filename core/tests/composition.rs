@@ -37,6 +37,31 @@ fn configured_text_expansion_replaces_trigger_on_space() {
 }
 
 #[test]
+fn backspace_keeps_the_remaining_word_composable() {
+    let mut session = CompositionSession::new(TypingMethod::Telex);
+    let mut document = apply_input(&mut session, "tieengs");
+    assert_eq!(document, "tiếng");
+
+    assert_eq!(session.process(InputEvent::Backspace), Action::PassThrough);
+    document.pop();
+    assert_eq!(document, "tiến");
+
+    match session.process(InputEvent::Text('f')) {
+        Action::ReplaceBefore {
+            delete_scalars,
+            insert,
+        } => {
+            for _ in 0..delete_scalars {
+                document.pop();
+            }
+            document.push_str(&insert);
+        }
+        Action::PassThrough => document.push('f'),
+    }
+    assert_eq!(document, "tiền");
+}
+
+#[test]
 fn telex_double_a_forms_circumflex() {
     assert_eq!(compose(TypingMethod::Telex, "aa"), "â");
 }

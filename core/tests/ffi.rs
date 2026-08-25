@@ -109,3 +109,40 @@ fn c_abi_clones_text_expansion_config_into_a_session() {
     // SAFETY: the pointer came from `nakl_session_new_with_config` and is freed once.
     unsafe { nakl_session_free(session) };
 }
+
+#[test]
+fn c_abi_backspace_updates_session_state_and_passes_through() {
+    use nakl_core::ffi::{
+        NAKL_ACTION_PASS_THROUGH, NAKL_EVENT_BACKSPACE, NAKL_EVENT_TEXT, NAKL_METHOD_TELEX,
+        NAKL_STATUS_OK, NaklAction, nakl_session_free, nakl_session_new, nakl_session_process,
+    };
+
+    let session = nakl_session_new(NAKL_METHOD_TELEX);
+    let mut action = NaklAction::default();
+    for character in ['a', 'a'] {
+        // SAFETY: the session and writable action storage remain live.
+        assert_eq!(
+            unsafe {
+                nakl_session_process(session, NAKL_EVENT_TEXT, character as u32, &mut action)
+            },
+            NAKL_STATUS_OK
+        );
+    }
+
+    // SAFETY: the session and writable action storage remain live.
+    assert_eq!(
+        unsafe { nakl_session_process(session, NAKL_EVENT_BACKSPACE, 0, &mut action) },
+        NAKL_STATUS_OK
+    );
+    assert_eq!(action.kind, NAKL_ACTION_PASS_THROUGH);
+
+    // SAFETY: same live pointers; a fresh `a` must start a new word after deleting `â`.
+    assert_eq!(
+        unsafe { nakl_session_process(session, NAKL_EVENT_TEXT, 'a' as u32, &mut action) },
+        NAKL_STATUS_OK
+    );
+    assert_eq!(action.kind, NAKL_ACTION_PASS_THROUGH);
+
+    // SAFETY: the pointer came from `nakl_session_new` and is freed exactly once.
+    unsafe { nakl_session_free(session) };
+}

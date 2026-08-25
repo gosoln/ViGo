@@ -2,10 +2,11 @@
 
 use libfuzzer_sys::fuzz_target;
 use nakl_core::ffi::{
-    NAKL_ACTION_PASS_THROUGH, NAKL_ACTION_REPLACE_BEFORE, NAKL_EVENT_BOUNDARY, NAKL_EVENT_TEXT,
-    NAKL_METHOD_TELEX, NAKL_METHOD_VNI, NAKL_STATUS_INVALID_INPUT, NAKL_STATUS_OK, NaklAction,
-    nakl_config_add_text_expansion, nakl_config_free, nakl_config_new, nakl_session_free,
-    nakl_session_new, nakl_session_new_with_config, nakl_session_process,
+    NAKL_ACTION_PASS_THROUGH, NAKL_ACTION_REPLACE_BEFORE, NAKL_EVENT_BACKSPACE,
+    NAKL_EVENT_BOUNDARY, NAKL_EVENT_TEXT, NAKL_METHOD_TELEX, NAKL_METHOD_VNI,
+    NAKL_STATUS_INVALID_INPUT, NAKL_STATUS_OK, NaklAction, nakl_config_add_text_expansion,
+    nakl_config_free, nakl_config_new, nakl_session_free, nakl_session_new,
+    nakl_session_new_with_config, nakl_session_process,
 };
 
 fuzz_target!(|data: &[u8]| {
@@ -46,9 +47,10 @@ fuzz_target!(|data: &[u8]| {
 
     for chunk in data.chunks(5) {
         let selector = chunk.first().copied().unwrap_or_default();
-        let event_kind = match selector % 3 {
+        let event_kind = match selector % 4 {
             0 => NAKL_EVENT_TEXT,
             1 => NAKL_EVENT_BOUNDARY,
+            2 => NAKL_EVENT_BACKSPACE,
             _ => u32::MAX,
         };
         let mut scalar_bytes = [0_u8; 4];

@@ -11,6 +11,7 @@ pub const NAKL_METHOD_TELEX: u32 = 1;
 pub const NAKL_METHOD_VNI: u32 = 2;
 pub const NAKL_EVENT_TEXT: u32 = 1;
 pub const NAKL_EVENT_BOUNDARY: u32 = 2;
+pub const NAKL_EVENT_BACKSPACE: u32 = 3;
 pub const NAKL_ACTION_PASS_THROUGH: u32 = 0;
 pub const NAKL_ACTION_REPLACE_BEFORE: u32 = 1;
 pub const NAKL_STATUS_OK: u32 = 0;
@@ -215,6 +216,7 @@ pub unsafe extern "C" fn nakl_session_process(
                 None => return NAKL_STATUS_INVALID_INPUT,
             },
             NAKL_EVENT_BOUNDARY => InputEvent::Boundary,
+            NAKL_EVENT_BACKSPACE => InputEvent::Backspace,
             _ => return NAKL_STATUS_INVALID_INPUT,
         };
 
