@@ -1,17 +1,27 @@
 NAKL - Yet another Vietnamese input keyboard for Mac OS
 =======
 
+NAKL 2.0 modernization is underway. Milestone M0 adds a deterministic Rust composition core, reviewed Telex/VNI golden fixtures, a versioned C ABI, and a command-line oracle for the legacy Objective-C behavior. The original macOS app remains in place as reference code; it is not the production base for the cross-platform rewrite.
+
+```sh
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+make -C legacy/oracle
+```
+
+See [the modernization plan](docs/modernization-plan.md), [platform evaluation](docs/research/cross-platform-input-method-platform-evaluation.md), and [architecture decisions](docs/adr/) before contributing to NAKL 2.0.
+
 * Please visit [homepage](http://huyphan.github.com/NAKL) of this project.
 
 Contributing
 =======
 
-* Please report issues on the [GitHub issue tracker](https://github.com/huyphan/NAKL/issues). Personal emails are not appropriate for bug reports. 
+* Please report issues on the [GitHub issue tracker](https://github.com/huyphan/NAKL/issues). Personal emails are not appropriate for bug reports.
 * Patches are preferred as GitHub pull requests. Contributors are welcome to request free beer from author of this project.
 
 Credits
 =======
-* chuoi (a.k.a Dao Hai Lam): author of [xvnkb](http://xvnkb.sourceforge.net). 
+* chuoi (a.k.a Dao Hai Lam): author of [xvnkb](http://xvnkb.sourceforge.net).
 * Thanks to mybb (a.k.a hieuln) and pmquan (a.k.a co`i) for helping me testing out this software.
 
 
