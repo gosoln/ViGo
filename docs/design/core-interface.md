@@ -13,6 +13,7 @@ Rust callers and tests use this Interface directly. Native platform Adapters use
 ## Interface Contract
 
 - Create one `CompositionSession` for each operating-system text context; state is never process-global.
+- Capture immutable settings with `CompositionSession::with_config`; later configuration changes create or refresh a session instead of mutating one during processing.
 - `InputEvent` represents semantic text or a composition boundary, not a macOS, Windows, or Linux key code.
 - `Action::PassThrough` leaves the event unchanged.
 - `Action::ReplaceBefore` consumes the event, deletes a bounded number of Unicode scalars immediately before the cursor, and inserts Canonical Output.

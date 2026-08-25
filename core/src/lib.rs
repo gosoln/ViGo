@@ -1,5 +1,7 @@
 //! Platform-independent Vietnamese composition.
 
+use std::collections::BTreeMap;
+
 pub mod ffi;
 
 /// A user-selectable Vietnamese typing convention.
@@ -24,6 +26,25 @@ pub enum Action {
         delete_scalars: usize,
         insert: String,
     },
+}
+
+/// Immutable settings captured when a composition session is created.
+#[derive(Clone, Debug, Default)]
+pub struct SessionConfig {
+    text_expansions: BTreeMap<String, String>,
+}
+
+impl SessionConfig {
+    /// Adds an exact, case-sensitive trigger expanded when space is entered.
+    pub fn with_text_expansion(
+        mut self,
+        trigger: impl Into<String>,
+        replacement: impl Into<String>,
+    ) -> Self {
+        self.text_expansions
+            .insert(trigger.into(), replacement.into());
+        self
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -245,13 +266,19 @@ fn modifier_for(method: TypingMethod, character: char) -> Option<Modifier> {
 #[derive(Debug)]
 pub struct CompositionSession {
     method: TypingMethod,
+    config: SessionConfig,
     word: String,
 }
 
 impl CompositionSession {
     pub fn new(method: TypingMethod) -> Self {
+        Self::with_config(method, SessionConfig::default())
+    }
+
+    pub fn with_config(method: TypingMethod, config: SessionConfig) -> Self {
         Self {
             method,
+            config,
             word: String::new(),
         }
     }
@@ -259,6 +286,18 @@ impl CompositionSession {
     pub fn process(&mut self, event: InputEvent) -> Action {
         match event {
             InputEvent::Boundary => {
+                self.word.clear();
+                Action::PassThrough
+            }
+            InputEvent::Text(' ') => {
+                if let Some(replacement) = self.config.text_expansions.get(&self.word) {
+                    let action = Action::ReplaceBefore {
+                        delete_scalars: self.word.chars().count(),
+                        insert: format!("{replacement} "),
+                    };
+                    self.word.clear();
+                    return action;
+                }
                 self.word.clear();
                 Action::PassThrough
             }

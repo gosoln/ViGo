@@ -1,7 +1,11 @@
-use nakl_core::{Action, CompositionSession, InputEvent, TypingMethod};
+use nakl_core::{Action, CompositionSession, InputEvent, SessionConfig, TypingMethod};
 
 fn compose(method: TypingMethod, input: &str) -> String {
     let mut session = CompositionSession::new(method);
+    apply_input(&mut session, input)
+}
+
+fn apply_input(session: &mut CompositionSession, input: &str) -> String {
     let mut document = String::new();
 
     for character in input.chars() {
@@ -22,6 +26,14 @@ fn compose(method: TypingMethod, input: &str) -> String {
     }
 
     document
+}
+
+#[test]
+fn configured_text_expansion_replaces_trigger_on_space() {
+    let config = SessionConfig::default().with_text_expansion("btw", "by the way");
+    let mut session = CompositionSession::with_config(TypingMethod::Telex, config);
+
+    assert_eq!(apply_input(&mut session, "btw "), "by the way ");
 }
 
 #[test]
