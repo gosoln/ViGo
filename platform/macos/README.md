@@ -2,6 +2,8 @@
 
 This package contains the native SwiftUI menu-bar/settings UI and the InputMethodKit adapter. Each macOS text context owns a Rust composition session through the versioned C ABI. Telex/VNI selection, enable/disable, launch at login, and text expansions are persisted with `UserDefaults`.
 
+On first launch, the app checks the legacy `com.zepvn.NAKL` preference domain and `~/Library/Application Support/NAKL/shortcuts.setting`. It migrates a valid typing method and bounded text-expansion records only when the corresponding new setting is absent. Current settings win, and legacy global hotkeys, excluded apps, and Accessibility state are intentionally left behind.
+
 Build the source or assemble an ad-hoc signed `.app` bundle on macOS:
 
 ```sh

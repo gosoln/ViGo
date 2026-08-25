@@ -66,7 +66,13 @@ final class SettingsStore: ObservableObject {
   @Published private(set) var launchAtLogin: Bool
   @Published private(set) var launchAtLoginError: String?
 
-  init(defaults: UserDefaults = .standard) {
+  convenience init() {
+    let defaults = UserDefaults.standard
+    LegacySettingsMigrator.migrateFromDiskIfNeeded(into: defaults)
+    self.init(defaults: defaults)
+  }
+
+  init(defaults: UserDefaults) {
     self.defaults = defaults
     isEnabled = defaults.object(forKey: SettingsKey.enabled) as? Bool ?? true
     method = TypingMethod(rawValue: defaults.string(forKey: SettingsKey.method) ?? "") ?? .telex
