@@ -1,8 +1,26 @@
 import AppKit
+import InputMethodKit
 import SwiftUI
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+  private var inputMethodServer: IMKServer?
+
+  func applicationDidFinishLaunching(_ notification: Notification) {
+    let connectionName =
+      Bundle.main.object(forInfoDictionaryKey: "InputMethodConnectionName")
+      as? String ?? "com.nakl.inputmethod.NAKL_Connection"
+    inputMethodServer = IMKServer(
+      name: connectionName,
+      controllerClass: NAKLInputController.self,
+      delegateClass: nil
+    )
+  }
+}
 
 @main
 struct NAKLApp: App {
+  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var settings = SettingsStore()
 
   var body: some Scene {

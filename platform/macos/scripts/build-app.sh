@@ -5,9 +5,11 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PACKAGE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 REPOSITORY_DIR=$(CDPATH= cd -- "$PACKAGE_DIR/../.." && pwd)
 APP_DIR="$REPOSITORY_DIR/build/NAKL.app"
+CORE_LIBRARY="$REPOSITORY_DIR/target/release/libnakl_core.a"
 
-swift build --package-path "$PACKAGE_DIR" -c release
-BIN_DIR=$(swift build --package-path "$PACKAGE_DIR" -c release --show-bin-path)
+cargo build --manifest-path "$REPOSITORY_DIR/Cargo.toml" -p nakl-core --release
+NAKL_CORE_LIBRARY="$CORE_LIBRARY" swift build --package-path "$PACKAGE_DIR" -c release
+BIN_DIR=$(NAKL_CORE_LIBRARY="$CORE_LIBRARY" swift build --package-path "$PACKAGE_DIR" -c release --show-bin-path)
 
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"

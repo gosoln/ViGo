@@ -7,7 +7,7 @@
     <key>CFBundleExecutable</key>
     <string>NAKL</string>
     <key>CFBundleIdentifier</key>
-    <string>com.nakl.input.settings</string>
+    <string>com.nakl.inputmethod.NAKL</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -22,6 +22,18 @@
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>InputMethodConnectionName</key>
+    <string>com.nakl.inputmethod.NAKL_Connection</string>
+    <key>InputMethodServerControllerClass</key>
+    <string>NAKLInputController</string>
+    <key>TISInputSourceID</key>
+    <string>com.nakl.inputmethod.NAKL</string>
+    <key>TISIntendedLanguage</key>
+    <string>vi</string>
+    <key>tsInputMethodCharacterRepertoireKey</key>
+    <array>
+        <string>Latn</string>
+    </array>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © NAKL contributors. GPL-3.0-or-later.</string>
 </dict>

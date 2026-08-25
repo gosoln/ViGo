@@ -12,7 +12,7 @@ Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/desi
 - `cargo fmt --all --check` verifies Rust formatting.
 - `cargo clippy --workspace --all-targets -- -D warnings` treats Rust diagnostics as failures.
 - `cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10` and the equivalent `ffi` target run bounded coverage-guided safety campaigns.
-- `swift build --package-path platform/macos` compiles the macOS UI; run `swift format lint --recursive --strict platform/macos/Sources` before review.
+- `cargo build -p nakl-core && swift build --package-path platform/macos` compiles the macOS adapter/UI; run `swift format lint --recursive --strict platform/macos/Sources platform/macos/Tests` before review.
 - `make -C legacy/oracle` builds `build/legacy-oracle`; for example, run `build/legacy-oracle telex tieengs`.
 - `cargo build -p nakl-core` emits the Rust library. Compile `core/tests/ffi_smoke.c` against `core/include/nakl_core.h` when changing the ABI.
 

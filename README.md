@@ -1,7 +1,7 @@
 NAKL - Yet another Vietnamese input keyboard for Mac OS
 =======
 
-NAKL 2.0 modernization is underway. M0 delivered a deterministic Rust composition core, reviewed Telex/VNI fixtures, a versioned C ABI, and a frozen legacy oracle. M1 now includes a minimal native macOS menu-bar/settings shell under `platform/macos/`; the original app remains frozen under `legacy/macos-hook/`.
+NAKL 2.0 modernization is underway. M0 delivered a deterministic Rust composition core, reviewed Telex/VNI fixtures, a versioned C ABI, and a frozen legacy oracle. M1 now includes a native InputMethodKit adapter plus the minimal macOS menu-bar/settings UI under `platform/macos/`; the original app remains frozen under `legacy/macos-hook/`.
 
 ```sh
 cargo test --workspace

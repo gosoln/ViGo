@@ -9,3 +9,5 @@ The 620×400 settings window uses native controls and three tabs:
 - **Giới thiệu** shows product identity, version, privacy, license, and source link.
 
 Avoid dashboards, sidebars, decorative cards, custom control skins, and settings that do not yet work. Platform code owns persistence and converts saved values into an immutable core configuration snapshot. Typed content never appears in settings storage, logs, or analytics.
+
+The same app bundle hosts `IMKServer`; InputMethodKit creates one controller and Rust core session per text context. Controllers consume plain text key-downs and use the client's replacement range for conversions. Command, Control, Option, unsupported document access, and composition boundaries remain native pass-through events.
