@@ -17,3 +17,10 @@ path = "fuzz_targets/composition.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "ffi"
+path = "fuzz_targets/ffi.rs"
+test = false
+doc = false
+bench = false

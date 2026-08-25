@@ -11,7 +11,7 @@ Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/desi
 - `cargo test --workspace` runs Rust behavioral and FFI tests with the pinned toolchain.
 - `cargo fmt --all --check` verifies Rust formatting.
 - `cargo clippy --workspace --all-targets -- -D warnings` treats Rust diagnostics as failures.
-- `cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10` runs a bounded coverage-guided core safety campaign.
+- `cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10` and the equivalent `ffi` target run bounded coverage-guided safety campaigns.
 - `make -C legacy/oracle` builds `build/legacy-oracle`; for example, run `build/legacy-oracle telex tieengs`.
 - `cargo build -p nakl-core` emits the Rust library. Compile `core/tests/ffi_smoke.c` against `core/include/nakl_core.h` when changing the ABI.
 
