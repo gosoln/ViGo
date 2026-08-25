@@ -46,3 +46,66 @@ fn c_abi_processes_text_through_the_same_session_seam() {
     // SAFETY: the pointer came from `nakl_session_new` and is freed exactly once.
     unsafe { nakl_session_free(session) };
 }
+
+#[test]
+fn c_abi_clones_text_expansion_config_into_a_session() {
+    use nakl_core::ffi::{
+        NAKL_ACTION_PASS_THROUGH, NAKL_ACTION_REPLACE_BEFORE, NAKL_EVENT_TEXT, NAKL_METHOD_TELEX,
+        NAKL_STATUS_OK, NaklAction, nakl_config_add_text_expansion, nakl_config_free,
+        nakl_config_new, nakl_session_free, nakl_session_new_with_config, nakl_session_process,
+    };
+
+    let trigger = "btw";
+    let replacement = "nhân tiện";
+    let config = nakl_config_new();
+    assert!(!config.is_null());
+
+    // SAFETY: both UTF-8 buffers and the config remain live for this call.
+    assert_eq!(
+        unsafe {
+            nakl_config_add_text_expansion(
+                config,
+                trigger.as_ptr(),
+                trigger.len(),
+                replacement.as_ptr(),
+                replacement.len(),
+            )
+        },
+        NAKL_STATUS_OK
+    );
+
+    // SAFETY: the config pointer is live for the duration of the constructor call.
+    let session = unsafe { nakl_session_new_with_config(NAKL_METHOD_TELEX, config) };
+    assert!(!session.is_null());
+    // SAFETY: the session owns a snapshot, so the live config can now be released.
+    unsafe { nakl_config_free(config) };
+
+    let mut action = NaklAction::default();
+    for character in trigger.chars() {
+        // SAFETY: the session and writable action storage remain live.
+        assert_eq!(
+            unsafe {
+                nakl_session_process(session, NAKL_EVENT_TEXT, character as u32, &mut action)
+            },
+            NAKL_STATUS_OK
+        );
+        assert_eq!(action.kind, NAKL_ACTION_PASS_THROUGH);
+    }
+
+    // SAFETY: the session and writable action storage remain live.
+    assert_eq!(
+        unsafe { nakl_session_process(session, NAKL_EVENT_TEXT, ' ' as u32, &mut action) },
+        NAKL_STATUS_OK
+    );
+    assert_eq!(action.kind, NAKL_ACTION_REPLACE_BEFORE);
+    assert_eq!(action.delete_scalars, trigger.chars().count());
+    // SAFETY: replacement bytes remain session-owned until its next process call.
+    let insert = unsafe { std::slice::from_raw_parts(action.insert_ptr, action.insert_len) };
+    assert_eq!(
+        std::str::from_utf8(insert).expect("core returns UTF-8"),
+        "nhân tiện "
+    );
+
+    // SAFETY: the pointer came from `nakl_session_new_with_config` and is freed once.
+    unsafe { nakl_session_free(session) };
+}

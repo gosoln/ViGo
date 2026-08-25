@@ -2,8 +2,9 @@
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::ptr;
+use std::{slice, str};
 
-use crate::{Action, CompositionSession, InputEvent, TypingMethod};
+use crate::{Action, CompositionSession, InputEvent, SessionConfig, TypingMethod};
 
 pub const ABI_VERSION: u32 = 1;
 pub const NAKL_METHOD_TELEX: u32 = 1;
@@ -44,6 +45,29 @@ pub struct NaklSession {
     last_insert: Vec<u8>,
 }
 
+/// Opaque builder for configuration copied into a session at creation time.
+pub struct NaklConfig {
+    config: SessionConfig,
+}
+
+fn typing_method(method: u32) -> Option<TypingMethod> {
+    match method {
+        NAKL_METHOD_TELEX => Some(TypingMethod::Telex),
+        NAKL_METHOD_VNI => Some(TypingMethod::Vni),
+        _ => None,
+    }
+}
+
+fn boxed_session(method: u32, config: SessionConfig) -> *mut NaklSession {
+    let Some(method) = typing_method(method) else {
+        return ptr::null_mut();
+    };
+    Box::into_raw(Box::new(NaklSession {
+        session: CompositionSession::with_config(method, config),
+        last_insert: Vec::new(),
+    }))
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn nakl_abi_version() -> u32 {
     ABI_VERSION
@@ -52,15 +76,96 @@ pub extern "C" fn nakl_abi_version() -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn nakl_session_new(method: u32) -> *mut NaklSession {
     catch_unwind(AssertUnwindSafe(|| {
-        let method = match method {
-            NAKL_METHOD_TELEX => TypingMethod::Telex,
-            NAKL_METHOD_VNI => TypingMethod::Vni,
-            _ => return ptr::null_mut(),
-        };
-        Box::into_raw(Box::new(NaklSession {
-            session: CompositionSession::new(method),
-            last_insert: Vec::new(),
+        boxed_session(method, SessionConfig::default())
+    }))
+    .unwrap_or(ptr::null_mut())
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn nakl_config_new() -> *mut NaklConfig {
+    catch_unwind(AssertUnwindSafe(|| {
+        Box::into_raw(Box::new(NaklConfig {
+            config: SessionConfig::default(),
         }))
+    }))
+    .unwrap_or(ptr::null_mut())
+}
+
+/// Adds one UTF-8 text expansion to a configuration builder.
+///
+/// # Safety
+///
+/// `config` must be a live pointer returned by [`nakl_config_new`]. Both byte
+/// pointers must reference readable storage of their respective lengths.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn nakl_config_add_text_expansion(
+    config: *mut NaklConfig,
+    trigger_ptr: *const u8,
+    trigger_len: usize,
+    replacement_ptr: *const u8,
+    replacement_len: usize,
+) -> u32 {
+    if config.is_null() || trigger_ptr.is_null() || replacement_ptr.is_null() {
+        return NAKL_STATUS_NULL_POINTER;
+    }
+
+    catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: byte storage validity is guaranteed by the caller contract.
+        let trigger =
+            match str::from_utf8(unsafe { slice::from_raw_parts(trigger_ptr, trigger_len) }) {
+                Ok(trigger) if !trigger.is_empty() => trigger,
+                _ => return NAKL_STATUS_INVALID_INPUT,
+            };
+        // SAFETY: byte storage validity is guaranteed by the caller contract.
+        let replacement = match str::from_utf8(unsafe {
+            slice::from_raw_parts(replacement_ptr, replacement_len)
+        }) {
+            Ok(replacement) => replacement,
+            Err(_) => return NAKL_STATUS_INVALID_INPUT,
+        };
+        // SAFETY: the live config pointer is guaranteed by the caller contract.
+        let config = unsafe { &mut *config };
+        config
+            .config
+            .text_expansions
+            .insert(trigger.to_owned(), replacement.to_owned());
+        NAKL_STATUS_OK
+    }))
+    .unwrap_or(NAKL_STATUS_PANIC)
+}
+
+/// Releases a configuration returned by [`nakl_config_new`].
+///
+/// # Safety
+///
+/// `config` must be null or a live pointer returned by [`nakl_config_new`]
+/// that has not already been released.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn nakl_config_free(config: *mut NaklConfig) {
+    if !config.is_null() {
+        // SAFETY: upheld by the caller contract above.
+        drop(unsafe { Box::from_raw(config) });
+    }
+}
+
+/// Creates a session that owns a snapshot of `config`.
+///
+/// # Safety
+///
+/// `config` must point to a live configuration returned by [`nakl_config_new`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn nakl_session_new_with_config(
+    method: u32,
+    config: *const NaklConfig,
+) -> *mut NaklSession {
+    if config.is_null() {
+        return ptr::null_mut();
+    }
+
+    catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: the live config pointer is guaranteed by the caller contract.
+        let config = unsafe { &*config };
+        boxed_session(method, config.config.clone())
     }))
     .unwrap_or(ptr::null_mut())
 }
