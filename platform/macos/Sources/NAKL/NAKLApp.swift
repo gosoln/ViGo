@@ -88,6 +88,39 @@ struct NAKLApp: App {
   }
 }
 
+@MainActor
+struct SettingsWindowPresenter {
+  private let activateApplication: () -> Void
+
+  init(
+    activateApplication: @escaping () -> Void = {
+      NSApp.activate(ignoringOtherApps: true)
+    }
+  ) {
+    self.activateApplication = activateApplication
+  }
+
+  func present(_ openSettings: () -> Void) {
+    activateApplication()
+    openSettings()
+  }
+}
+
+@available(macOS 14.0, *)
+private struct ModernSettingsButton: View {
+  @Environment(\.openSettings) private var openSettings
+
+  var body: some View {
+    Button {
+      SettingsWindowPresenter().present {
+        openSettings()
+      }
+    } label: {
+      Label("Tùy chọn…", systemImage: "gearshape")
+    }
+  }
+}
+
 private struct StatusMenu: View {
   @ObservedObject var accessibility: AccessibilityAuthorization
   @ObservedObject var settings: SettingsStore
@@ -138,13 +171,12 @@ private struct StatusMenu: View {
     Divider()
 
     if #available(macOS 14.0, *) {
-      SettingsLink {
-        Label("Tùy chọn…", systemImage: "gearshape")
-      }
+      ModernSettingsButton()
     } else {
       Button {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
+        SettingsWindowPresenter().present {
+          NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
       } label: {
         Label("Tùy chọn…", systemImage: "gearshape")
       }

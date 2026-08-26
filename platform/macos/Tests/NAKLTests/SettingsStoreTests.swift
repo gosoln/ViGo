@@ -3,6 +3,21 @@ import Testing
 
 @testable import NAKL
 
+@Test("Settings menu opens its window and activates NAKL")
+@MainActor
+func settingsMenuOpensAndActivatesApplication() {
+  var events: [String] = []
+  let presenter = SettingsWindowPresenter(
+    activateApplication: { events.append("activate") }
+  )
+
+  presenter.present {
+    events.append("open")
+  }
+
+  #expect(events == ["activate", "open"])
+}
+
 @Test("Settings persist between store instances")
 @MainActor
 func settingsPersistBetweenStoreInstances() throws {
