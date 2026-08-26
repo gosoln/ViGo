@@ -9,7 +9,11 @@ Every macOS, Windows TSF, IBus, and Fcitx5 adapter must replay these cases throu
 | R3 | Telex `hai`, then `r` | `hải` | `haỉ` |
 | R4 | Telex `hoai`, then `r` | `hoải` | `hoaỉ` |
 | R5 | VNI `giai`, then `3` | `giải` | `giaỉ` |
+| R6 | Telex `v e r r s i o n` | `version` | `vérion` or `vér` after the fifth key |
 
 For R2, the tone event must replace the two committed scalars `ai` with `ải`; replacing only the final `i` is a failure even if a later correction hides it.
 
-Run R1–R5 in each platform's fake-client contract tests and in a Chromium address bar plus one native editor. Where the adapter uses committed-input mode, verify that typing has no marked-text underline and that client suggestions remain available. Record the OS, adapter, client version, architecture, NAKL commit, and PASS/FAIL/BLOCKED without capturing unrelated user text.
+For R6, the second `r` restores `vè` to literal `ver`. All later modifier keys remain literal until
+the next word boundary; the following word must compose normally.
+
+Run R1–R6 in each platform's fake-client contract tests and in a Chromium address bar plus one native editor. Where the adapter uses committed-input mode, verify that typing has no marked-text underline and that client suggestions remain available. Record the OS, adapter, client version, architecture, NAKL commit, and PASS/FAIL/BLOCKED without capturing unrelated user text.

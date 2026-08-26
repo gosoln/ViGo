@@ -132,6 +132,14 @@ int main()
     VerifyRegression(TypingMethod::Telex, U"hoai", U'r', u"hoải", 2, u"ai", u"ải");
     VerifyRegression(TypingMethod::Vni, U"giai", U'3', u"giải", 2, u"ai", u"ải");
 
+    FakeEditor literal_editor(TypingMethod::Telex);
+    for (char32_t scalar : std::u32string_view(U"verrsion"))
+    {
+        literal_editor.Type(scalar);
+    }
+    Expect(literal_editor.text() == u"version",
+           "repeated tone modifier must keep the rest of the word literal");
+
     FakeEditor reset_editor(TypingMethod::Telex);
     reset_editor.Type(U'a');
     reset_editor.Boundary();
@@ -151,6 +159,6 @@ int main()
     }
     Expect(expansion_editor.text() == u"by the way ", "text expansion contract must apply");
 
-    std::cout << "PASS: Windows composition contract R1-R5 and expansion\n";
+    std::cout << "PASS: Windows composition contract R1-R6 and expansion\n";
     return 0;
 }

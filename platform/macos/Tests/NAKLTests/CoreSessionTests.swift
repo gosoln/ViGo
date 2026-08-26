@@ -130,6 +130,21 @@ func directTypingReplacesVowelWithoutDuplication() throws {
   #expect(applyDirectInput("chaf", using: engine) == "chà")
 }
 
+@Test("Direct typing keeps a restored foreign word literal")
+func directTypingKeepsRestoredForeignWordLiteral() throws {
+  let engine = try #require(
+    DirectTypingEngine(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: []
+      )
+    )
+  )
+
+  #expect(applyDirectInput("verrsion", using: engine) == "version")
+}
+
 @Test("Direct typing reset prevents composition crossing text contexts")
 func directTypingResetPreventsCrossContextComposition() throws {
   let engine = try #require(

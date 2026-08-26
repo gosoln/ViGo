@@ -176,6 +176,14 @@ int main()
     VerifyRegression(TypingMethod::Telex, U"hoai", U'r', "hoải", 2, "ai", "ải");
     VerifyRegression(TypingMethod::Vni, U"giai", U'3', "giải", 2, "ai", "ải");
 
+    FakeCommittedEditor literal_editor(TypingMethod::Telex);
+    for (const char32_t scalar : std::u32string_view(U"verrsion"))
+    {
+        literal_editor.Type(scalar);
+    }
+    Expect(literal_editor.text() == "version",
+           "repeated tone modifier must keep the rest of the word literal");
+
     FakeCommittedEditor reset_editor(TypingMethod::Telex);
     reset_editor.Type(U'a');
     reset_editor.Boundary();
@@ -287,6 +295,6 @@ int main()
     Expect(!tracker.CanReplaceBefore(2, "ải"),
            "unconfirmed native update must invalidate replacement capability");
 
-    std::cout << "PASS: Linux committed-edit contract R1-R5 and expansion\n";
+    std::cout << "PASS: Linux committed-edit contract R1-R6 and expansion\n";
     return 0;
 }

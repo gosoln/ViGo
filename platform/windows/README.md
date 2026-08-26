@@ -14,7 +14,7 @@ The first M2 slice provides:
 - Telex/VNI key processing, secure-mode pass-through, and ordered committed replacements;
 - a separate `NAKLSettings.exe` tray/settings process with configurable global hot keys and
   General, Text Expansion, and About tabs;
-- fake-editor contract coverage for shared regressions R1–R5 plus Text Expansion.
+- fake-editor contract coverage for shared regressions R1–R6 plus Text Expansion.
 
 Signed MSI lifecycle evidence and real-client certification remain future M2 gates. The settings process is never loaded into client applications. A TSF instance
 reloads settings at activation or after its text context changes; focus away and back after editing

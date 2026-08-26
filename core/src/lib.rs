@@ -269,6 +269,7 @@ pub struct CompositionSession {
     method: TypingMethod,
     config: SessionConfig,
     word: String,
+    modifiers_disabled: bool,
 }
 
 impl CompositionSession {
@@ -281,6 +282,7 @@ impl CompositionSession {
             method,
             config,
             word: String::new(),
+            modifiers_disabled: false,
         }
     }
 
@@ -291,7 +293,7 @@ impl CompositionSession {
                 Action::PassThrough
             }
             InputEvent::Boundary => {
-                self.word.clear();
+                self.clear_word();
                 Action::PassThrough
             }
             InputEvent::Text(' ') => {
@@ -300,19 +302,23 @@ impl CompositionSession {
                         delete_scalars: self.word.chars().count(),
                         insert: format!("{replacement} "),
                     };
-                    self.word.clear();
+                    self.clear_word();
                     return action;
                 }
-                self.word.clear();
+                self.clear_word();
                 Action::PassThrough
             }
             InputEvent::Text(character)
                 if !character.is_alphabetic() && modifier_for(self.method, character).is_none() =>
             {
-                self.word.clear();
+                self.clear_word();
                 Action::PassThrough
             }
             InputEvent::Text(character) if modifier_for(self.method, character).is_some() => {
+                if self.modifiers_disabled {
+                    self.word.push(character);
+                    return Action::PassThrough;
+                }
                 let modifier = modifier_for(self.method, character).expect("guarded by is_some");
                 if let Some(action) = self.apply_modifier(modifier) {
                     return action;
@@ -341,6 +347,7 @@ impl CompositionSession {
                             .then_some((index, vowel))
                     })
                 {
+                    self.modifiers_disabled = true;
                     return Some(self.replace_scalar_and_append(
                         byte_index,
                         render_vowel(Vowel {
@@ -391,6 +398,7 @@ impl CompositionSession {
                     .copied();
                 let (byte_index, mut vowel) = shaped.or_else(|| self.tone_target(&vowels))?;
                 if vowel.tone == tone {
+                    self.modifiers_disabled = true;
                     return Some(self.replace_scalar_and_append(
                         byte_index,
                         render_vowel(Vowel {
@@ -468,6 +476,11 @@ impl CompositionSession {
             }
             _ => Some(nucleus[nucleus.len() - 2]),
         }
+    }
+
+    fn clear_word(&mut self) {
+        self.word.clear();
+        self.modifiers_disabled = false;
     }
 
     fn replace_scalar(&mut self, byte_index: usize, replacement: char) -> Action {

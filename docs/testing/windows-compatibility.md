@@ -13,7 +13,7 @@ cmake --build build/windows --config Debug
 ctest --test-dir build/windows -C Debug --output-on-failure
 ```
 
-The fake editor must pass R1–R5 from [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md), assert both deletion count and inserted UTF-16 text, and commit a configured Text Expansion on space.
+The fake editor must pass R1–R6 from [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md), assert both deletion count and inserted UTF-16 text, and commit a configured Text Expansion on space.
 
 ## Required System Cases
 
@@ -31,8 +31,9 @@ The fake editor must pass R1–R5 from [Cross-Platform Composition Regressions](
 | W10 | Install, repair, upgrade, rollback, and uninstall MSI | Profile/receipt state is correct and settings survive supported transitions |
 | W11 | Add the current `.exe` to exclusions, refocus, type `tieengs` | Literal input; W1 after removing the exclusion and refocusing |
 | W12 | Invoke configured toggle and method-switch hot keys | Enabled state and Telex/VNI selection change once per press |
+| W13 | Telex `v e r r s i o n` | `version`; never `vérion` |
 
-Run W1–W9 and W11–W12 in Win32 Notepad, Microsoft Word, a WinUI text field, Chrome, and one app-container client. Repeat focus switching across two applications. Confirm the TSF DLL performs no network access and remains functional under app-container restrictions.
+Run W1–W9 and W11–W13 in Win32 Notepad, Microsoft Word, a WinUI text field, Chrome, and one app-container client. Repeat focus switching across two applications. Confirm the TSF DLL performs no network access and remains functional under app-container restrictions.
 
 ## Current Status
 

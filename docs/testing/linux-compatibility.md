@@ -6,13 +6,13 @@ PASS is not evidence for a desktop/client row.
 | ID | Gate | Required evidence | Status |
 | --- | --- | --- | --- |
 | L1 | Ubuntu 24.04 x86_64 build | IBus 1.5.29 and Fcitx5 5.1.7 compile with warnings denied | PASS |
-| L2 | Shared adapter contract | R1–R5, VNI, expansion, reset, Delete→Commit, stale-caret rejection, no preedit API | PASS |
+| L2 | Shared adapter contract | R1–R6, VNI, expansion, reset, Delete→Commit, stale-caret rejection, no preedit API | PASS |
 | L3 | Debian packages | Separate `nakl-ibus`/`nakl-fcitx5` packages inspect, install, and uninstall cleanly | PASS |
 | L4 | Fedora 44 x86_64 build/RPM | Native compile, contract tests, RPM inspection/install/uninstall | PASS |
-| L5 | IBus GNOME Wayland | GTK3/GTK4/Electron, R1–R5, no underline, suggestions retained | BLOCKED |
-| L6 | IBus X11 | GTK3/GTK4/Electron, R1–R5 | BLOCKED |
-| L7 | Fcitx5 Wayland | Qt5/Qt6/Electron, R1–R5, no underline | BLOCKED |
-| L8 | Fcitx5 X11 | Qt5/Qt6/Electron, R1–R5 | BLOCKED |
+| L5 | IBus GNOME Wayland | GTK3/GTK4/Electron, R1–R6, no underline, suggestions retained | BLOCKED |
+| L6 | IBus X11 | GTK3/GTK4/Electron, R1–R6 | BLOCKED |
+| L7 | Fcitx5 Wayland | Qt5/Qt6/Electron, R1–R6, no underline | BLOCKED |
+| L8 | Fcitx5 X11 | Qt5/Qt6/Electron, R1–R6 | BLOCKED |
 | L9 | Secure contexts | Password/sensitive/disabled fields pass through and reset | PARTIAL |
 | L10 | Session isolation | Two fields/apps cannot share stale composition | PARTIAL |
 | L11 | Lifecycle | Clean install, upgrade, rollback, uninstall, login activation | BLOCKED |

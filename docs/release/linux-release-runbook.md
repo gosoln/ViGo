@@ -21,7 +21,7 @@ mark P2 released until every required row in the Linux compatibility matrix is P
 
 ## Behavioral and security gates
 
-Replay R1–R5 in GTK3, GTK4, Qt5, Qt6, and Electron on Wayland and X11. For each committed edit,
+Replay R1–R6 in GTK3, GTK4, Qt5, Qt6, and Electron on Wayland and X11. For each committed edit,
 verify deletion occurs before commit, no preedit underline appears, and suggestions remain usable.
 Test password/sensitive/disabled fields, focus changes, cursor movement, two simultaneous contexts,
 client crashes, and clients lacking surrounding-text deletion. Unsupported clients must pass through;

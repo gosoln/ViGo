@@ -135,6 +135,16 @@ fn repeating_a_tone_modifier_restores_literal_input() {
 }
 
 #[test]
+fn repeating_a_tone_modifier_disables_later_tones_for_the_word() {
+    assert_eq!(compose(TypingMethod::Telex, "verrs"), "vers");
+    assert_eq!(compose(TypingMethod::Telex, "verrsion"), "version");
+    assert_eq!(compose(TypingMethod::Telex, "verrf"), "verf");
+    assert_eq!(compose(TypingMethod::Vni, "ve331"), "ve31");
+    assert_eq!(compose(TypingMethod::Telex, "aaas"), "aas");
+    assert_eq!(compose(TypingMethod::Telex, "verr as"), "ver á");
+}
+
+#[test]
 fn telex_places_tone_on_the_leading_vowel_in_ua() {
     assert_eq!(compose(TypingMethod::Telex, "tuar"), "tủa");
 }
