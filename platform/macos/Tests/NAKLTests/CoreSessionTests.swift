@@ -85,6 +85,66 @@ func markedCompositionAppliesExpansionBeforeCommit() throws {
   #expect(composition.text == "by the way ")
 }
 
+@Test("Direct typing commits Telex without marked text")
+func directTypingCommitsTelexWithoutMarkedText() throws {
+  let engine = try #require(
+    DirectTypingEngine(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: []
+      )
+    )
+  )
+
+  #expect(applyDirectInput("tieengs", using: engine) == "tiếng")
+}
+
+@Test("Direct typing places a late tone on the giai nucleus")
+func directTypingPlacesLateToneOnGiaiNucleus() throws {
+  let engine = try #require(
+    DirectTypingEngine(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: []
+      )
+    )
+  )
+
+  #expect(applyDirectInput("giair", using: engine) == "giải")
+}
+
+@Test("Direct typing replaces a vowel instead of duplicating it")
+func directTypingReplacesVowelWithoutDuplication() throws {
+  let engine = try #require(
+    DirectTypingEngine(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: []
+      )
+    )
+  )
+
+  #expect(applyDirectInput("chaf", using: engine) == "chà")
+}
+
+@Test("Direct typing commits text expansion on space")
+func directTypingCommitsTextExpansionOnSpace() throws {
+  let engine = try #require(
+    DirectTypingEngine(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: [TextExpansion(shortcut: "btw", replacement: "by the way")]
+      )
+    )
+  )
+
+  #expect(applyDirectInput("btw ", using: engine) == "by the way ")
+}
+
 @Test("macOS key events normalize to semantic core events")
 func macOSKeyEventsNormalizeToCoreEvents() {
   #expect(normalized(keyCode: 123, characters: "\u{F702}") == .boundary)
@@ -109,4 +169,17 @@ private func normalized(
     characters: characters,
     method: method
   )
+}
+
+private func applyDirectInput(_ input: String, using engine: DirectTypingEngine) -> String {
+  var committedText = ""
+  for scalar in input.unicodeScalars {
+    switch engine.process(.text(scalar)) {
+    case .passThrough:
+      committedText.append(String(scalar))
+    case .replaceCommitted(let deleteScalars, let insert):
+      committedText = String(committedText.unicodeScalars.dropLast(deleteScalars)) + insert
+    }
+  }
+  return committedText
 }

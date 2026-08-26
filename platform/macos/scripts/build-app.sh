@@ -32,19 +32,23 @@ MACOSX_DEPLOYMENT_TARGET=13.0 cargo build \
     --manifest-path "$REPOSITORY_DIR/Cargo.toml" \
     -p nakl-core --release --target x86_64-apple-darwin
 
-NAKL_CORE_LIBRARY="$ARM64_CORE" swift build \
-    --package-path "$PACKAGE_DIR" --scratch-path "$ARM64_SCRATCH" \
-    --triple arm64-apple-macosx13.0 -c release
-NAKL_CORE_LIBRARY="$X86_64_CORE" swift build \
-    --package-path "$PACKAGE_DIR" --scratch-path "$X86_64_SCRATCH" \
-    --triple x86_64-apple-macosx13.0 -c release
-
 ARM64_BIN=$(NAKL_CORE_LIBRARY="$ARM64_CORE" swift build \
     --package-path "$PACKAGE_DIR" --scratch-path "$ARM64_SCRATCH" \
     --triple arm64-apple-macosx13.0 -c release --show-bin-path)
 X86_64_BIN=$(NAKL_CORE_LIBRARY="$X86_64_CORE" swift build \
     --package-path "$PACKAGE_DIR" --scratch-path "$X86_64_SCRATCH" \
     --triple x86_64-apple-macosx13.0 -c release --show-bin-path)
+
+# SwiftPM does not track the Rust archive passed through unsafe linker flags.
+# Remove only the final products so a changed core is always linked into NAKL.
+rm -f "$ARM64_BIN/NAKL" "$X86_64_BIN/NAKL"
+
+NAKL_CORE_LIBRARY="$ARM64_CORE" swift build \
+    --package-path "$PACKAGE_DIR" --scratch-path "$ARM64_SCRATCH" \
+    --triple arm64-apple-macosx13.0 -c release
+NAKL_CORE_LIBRARY="$X86_64_CORE" swift build \
+    --package-path "$PACKAGE_DIR" --scratch-path "$X86_64_SCRATCH" \
+    --triple x86_64-apple-macosx13.0 -c release
 
 mkdir -p "$STAGED_APP/Contents/MacOS" "$STAGED_APP/Contents/Resources"
 lipo -create "$ARM64_BIN/NAKL" "$X86_64_BIN/NAKL" \

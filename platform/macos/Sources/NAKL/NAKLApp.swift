@@ -4,6 +4,8 @@ import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+  private var accessibilityPollTimer: Timer?
+  private var directInputTap: DirectInputTap?
   private var inputMethodServer: IMKServer?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
@@ -17,6 +19,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       name: connectionName,
       bundleIdentifier: bundleIdentifier
     )
+
+    let directInputTap = DirectInputTap()
+    self.directInputTap = directInputTap
+    if !directInputTap.startIfPermitted() {
+      _ = DirectInputTap.requestAccessibilityPermission()
+      accessibilityPollTimer = Timer.scheduledTimer(
+        timeInterval: 1,
+        target: self,
+        selector: #selector(startDirectInputWhenPermitted(_:)),
+        userInfo: nil,
+        repeats: true
+      )
+    }
+  }
+
+  @objc private func startDirectInputWhenPermitted(_ timer: Timer) {
+    if directInputTap?.startIfPermitted() == true {
+      timer.invalidate()
+      accessibilityPollTimer = nil
+    }
   }
 }
 

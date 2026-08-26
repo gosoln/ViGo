@@ -389,29 +389,7 @@ impl CompositionSession {
                     .rev()
                     .find(|(_, vowel)| vowel.shape != Shape::Plain)
                     .copied();
-                let pair_leader = match vowels.as_slice() {
-                    [(first_index, first), (_, second)]
-                        if matches!((first.base, second.base), (Base::U, Base::A)) =>
-                    {
-                        let follows_q = self.word[..*first_index]
-                            .chars()
-                            .next_back()
-                            .is_some_and(|ch| ch.eq_ignore_ascii_case(&'q'));
-                        (!follows_q).then_some((*first_index, *first))
-                    }
-                    [(first_index, first), (_, second)]
-                        if matches!((first.base, second.base), (Base::I, Base::A)) =>
-                    {
-                        let follows_g = self.word[..*first_index]
-                            .chars()
-                            .next_back()
-                            .is_some_and(|ch| ch.eq_ignore_ascii_case(&'g'));
-                        (!follows_g).then_some((*first_index, *first))
-                    }
-                    _ => None,
-                };
-                let (byte_index, mut vowel) =
-                    shaped.or(pair_leader).or_else(|| vowels.last().copied())?;
+                let (byte_index, mut vowel) = shaped.or_else(|| self.tone_target(&vowels))?;
                 if vowel.tone == tone {
                     return Some(self.replace_scalar_and_append(
                         byte_index,
@@ -453,6 +431,42 @@ impl CompositionSession {
                     }),
                 ))
             }
+        }
+    }
+
+    fn tone_target(&self, vowels: &[(usize, Vowel)]) -> Option<(usize, Vowel)> {
+        let mut nucleus = vowels;
+        if vowels.len() > 1 {
+            let (first_index, first) = vowels[0];
+            let preceding = self.word[..first_index].chars().next_back();
+            let leading_glide = matches!((preceding, first.base), (Some('q' | 'Q'), Base::U))
+                || matches!((preceding, first.base), (Some('g' | 'G'), Base::I));
+            if leading_glide {
+                nucleus = &vowels[1..];
+            }
+        }
+
+        match nucleus {
+            [] => None,
+            [only] => Some(*only),
+            [first, second] => {
+                let second_length = self.word[second.0..]
+                    .chars()
+                    .next()
+                    .expect("vowel index points at a scalar")
+                    .len_utf8();
+                let has_final_consonant = second.0 + second_length < self.word.len();
+                let open_final_vowel_cluster = matches!(
+                    (first.1.base, second.1.base),
+                    (Base::O, Base::A | Base::E) | (Base::U, Base::Y)
+                );
+                if has_final_consonant || open_final_vowel_cluster {
+                    Some(*second)
+                } else {
+                    Some(*first)
+                }
+            }
+            _ => Some(nucleus[nucleus.len() - 2]),
         }
     }
 

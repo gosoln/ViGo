@@ -140,6 +140,11 @@ fn telex_places_tone_on_the_leading_vowel_in_ua() {
 }
 
 #[test]
+fn telex_places_tone_on_the_nucleus_in_giai() {
+    assert_eq!(compose(TypingMethod::Telex, "giair"), "giải");
+}
+
+#[test]
 fn product_golden_corpus_matches_reviewed_behavior() {
     let corpus = include_str!("../../tests/golden/product-expected.tsv");
 
