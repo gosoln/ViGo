@@ -1,6 +1,7 @@
 #include "settings.h"
 
 #include <windows.h>
+#include <ktmw32.h>
 
 #include <algorithm>
 #include <cwchar>
@@ -49,6 +50,30 @@ class RegistryKey final
 
   private:
     HKEY key_ = nullptr;
+};
+
+class TransactionHandle final
+{
+  public:
+    explicit TransactionHandle(HANDLE handle) noexcept : handle_(handle) {}
+    ~TransactionHandle()
+    {
+        if (handle_ != nullptr && handle_ != INVALID_HANDLE_VALUE)
+        {
+            CloseHandle(handle_);
+        }
+    }
+
+    TransactionHandle(const TransactionHandle &) = delete;
+    TransactionHandle &operator=(const TransactionHandle &) = delete;
+
+    [[nodiscard]] HANDLE Get() const noexcept
+    {
+        return handle_;
+    }
+
+  private:
+    HANDLE handle_ = INVALID_HANDLE_VALUE;
 };
 
 [[nodiscard]] std::optional<DWORD> ReadDword(HKEY key, const wchar_t *name)
@@ -297,25 +322,42 @@ bool SaveSettings(const SettingsSnapshot &settings) noexcept
             expansions.push_back(*trigger + L'\t' + *replacement);
         }
 
-        RegistryKey key;
-        if (RegCreateKeyExW(HKEY_CURRENT_USER, SettingsPath, 0, nullptr, 0, KEY_SET_VALUE, nullptr,
-                            key.Put(), nullptr) != ERROR_SUCCESS)
+        TransactionHandle transaction(
+            CreateTransaction(nullptr, nullptr, 0, 0, 0, 0, nullptr));
+        if (transaction.Get() == INVALID_HANDLE_VALUE)
         {
             return false;
         }
-        return WriteDword(key.Get(), L"TypingMethod",
-                          settings.method == TypingMethod::Vni ? 2 : 1) &&
-               WriteMultiString(key.Get(), L"TextExpansions", expansions) &&
-               WriteMultiString(key.Get(), L"ExcludedExecutables", settings.excluded_executables) &&
-               WriteDword(key.Get(), L"ToggleHotKeyModifiers",
-                          settings.toggle_input_hot_key.modifiers) &&
-               WriteDword(key.Get(), L"ToggleHotKeyVirtualKey",
-                          settings.toggle_input_hot_key.virtual_key) &&
-               WriteDword(key.Get(), L"SwitchHotKeyModifiers",
-                          settings.switch_method_hot_key.modifiers) &&
-               WriteDword(key.Get(), L"SwitchHotKeyVirtualKey",
-                          settings.switch_method_hot_key.virtual_key) &&
-               WriteDword(key.Get(), L"Enabled", settings.enabled ? 1 : 0);
+        bool written = false;
+        {
+            RegistryKey key;
+            if (RegCreateKeyTransactedW(HKEY_CURRENT_USER, SettingsPath, 0, nullptr, 0,
+                                        KEY_SET_VALUE, nullptr, key.Put(), nullptr,
+                                        transaction.Get(),
+                                        nullptr) == ERROR_SUCCESS)
+            {
+                written = WriteDword(key.Get(), L"TypingMethod",
+                                     settings.method == TypingMethod::Vni ? 2 : 1) &&
+                          WriteMultiString(key.Get(), L"TextExpansions", expansions) &&
+                          WriteMultiString(key.Get(), L"ExcludedExecutables",
+                                           settings.excluded_executables) &&
+                          WriteDword(key.Get(), L"ToggleHotKeyModifiers",
+                                     settings.toggle_input_hot_key.modifiers) &&
+                          WriteDword(key.Get(), L"ToggleHotKeyVirtualKey",
+                                     settings.toggle_input_hot_key.virtual_key) &&
+                          WriteDword(key.Get(), L"SwitchHotKeyModifiers",
+                                     settings.switch_method_hot_key.modifiers) &&
+                          WriteDword(key.Get(), L"SwitchHotKeyVirtualKey",
+                                     settings.switch_method_hot_key.virtual_key) &&
+                          WriteDword(key.Get(), L"Enabled", settings.enabled ? 1 : 0);
+            }
+        }
+        const bool committed = written && CommitTransaction(transaction.Get()) != FALSE;
+        if (!committed)
+        {
+            RollbackTransaction(transaction.Get());
+        }
+        return committed;
     }
     catch (...)
     {

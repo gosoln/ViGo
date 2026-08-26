@@ -29,6 +29,7 @@ $coreLibrary = Join-Path $repository "target/release/nakl_core.lib"
 Push-Location $repository
 try {
     cargo build -p nakl-core --release
+    cargo test -p nakl-core --release --test performance -- --ignored --nocapture
     cmake -S platform/windows -B $buildDirectory -A x64 -DBUILD_TESTING=ON `
         -DNAKL_CORE_LIBRARY=$coreLibrary
     cmake --build $buildDirectory --config $Configuration

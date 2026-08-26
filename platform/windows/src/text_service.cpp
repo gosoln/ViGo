@@ -140,6 +140,24 @@ struct NormalizedKey
            IsCompartmentEnabled(context, GUID_COMPARTMENT_EMPTYCONTEXT);
 }
 
+[[nodiscard]] bool EditChangedText(ITfEditRecord *edit_record)
+{
+    if (edit_record == nullptr)
+    {
+        return false;
+    }
+    ComPtr<IEnumTfRanges> ranges;
+    if (FAILED(edit_record->GetTextAndPropertyUpdates(TF_GTP_INCL_TEXT, nullptr, 0,
+                                                      ranges.Put())) ||
+        ranges.Get() == nullptr)
+    {
+        return false;
+    }
+    ComPtr<ITfRange> range;
+    ULONG fetched = 0;
+    return ranges->Next(1, range.Put(), &fetched) == S_OK && fetched == 1;
+}
+
 } // namespace
 
 TextService::TextService() noexcept
@@ -187,6 +205,10 @@ HRESULT TextService::QueryInterface(REFIID interface_id, void **object)
     else if (interface_id == IID_ITfKeyEventSink)
     {
         *object = static_cast<ITfKeyEventSink *>(this);
+    }
+    else if (interface_id == IID_ITfTextEditSink)
+    {
+        *object = static_cast<ITfTextEditSink *>(this);
     }
     else
     {
@@ -297,6 +319,14 @@ HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l
     {
         return S_OK;
     }
+    if (ignore_next_edit_)
+    {
+        // The client did not report a committed edit for the previous
+        // pass-through key. Its text is therefore not safe to retain in the
+        // composition history.
+        ignore_next_edit_ = false;
+        session_->Reset();
+    }
 
     const NormalizedKey key = NormalizeKey(w_param, l_param);
     if (key.kind != NormalizedKind::Text)
@@ -397,10 +427,14 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
     }
     if (action->kind == EditAction::Kind::PassThrough)
     {
+        ignore_next_edit_ = true;
         return S_OK;
     }
 
+    applying_edit_ = true;
+    ignore_next_edit_ = true;
     result = ApplyEditAction(context, client_id_, *action);
+    applying_edit_ = false;
     if (result == S_OK)
     {
         *eaten = TRUE;
@@ -426,6 +460,31 @@ HRESULT TextService::OnPreservedKey(ITfContext *context, REFGUID guid, BOOL *eat
         return E_POINTER;
     }
     *eaten = FALSE;
+    return S_OK;
+}
+
+HRESULT TextService::OnEndEdit(ITfContext *context, TfEditCookie edit_cookie,
+                               ITfEditRecord *edit_record)
+{
+    static_cast<void>(context);
+    static_cast<void>(edit_cookie);
+    if (applying_edit_)
+    {
+        ignore_next_edit_ = false;
+        return S_OK;
+    }
+    if (ignore_next_edit_)
+    {
+        ignore_next_edit_ = false;
+        if (EditChangedText(edit_record))
+        {
+            return S_OK;
+        }
+    }
+    if (session_ != nullptr)
+    {
+        session_->Reset();
+    }
     return S_OK;
 }
 
@@ -462,11 +521,38 @@ HRESULT TextService::EnsureContext(ITfContext *context)
         }
         context_identity_ = identity.Get();
         context_identity_->AddRef();
+        const HRESULT advise_result = AdviseContext(context);
+        if (FAILED(advise_result))
+        {
+            ClearContext();
+            return advise_result;
+        }
     }
     if (processing_enabled_ && (session_ == nullptr || !session_->valid()))
     {
         return E_OUTOFMEMORY;
     }
+    return S_OK;
+}
+
+HRESULT TextService::AdviseContext(ITfContext *context)
+{
+    ComPtr<ITfSource> source;
+    HRESULT result =
+        context->QueryInterface(IID_ITfSource, reinterpret_cast<void **>(source.Put()));
+    if (FAILED(result))
+    {
+        return result;
+    }
+    result = source->AdviseSink(IID_ITfTextEditSink, static_cast<ITfTextEditSink *>(this),
+                                &edit_sink_cookie_);
+    if (FAILED(result))
+    {
+        edit_sink_cookie_ = TF_INVALID_COOKIE;
+        return result;
+    }
+    advised_context_ = context;
+    advised_context_->AddRef();
     return S_OK;
 }
 
@@ -493,6 +579,21 @@ bool TextService::ResetContext() noexcept
 
 void TextService::ClearContext() noexcept
 {
+    if (advised_context_ != nullptr)
+    {
+        ComPtr<ITfSource> source;
+        if (edit_sink_cookie_ != TF_INVALID_COOKIE &&
+            SUCCEEDED(advised_context_->QueryInterface(IID_ITfSource,
+                                                       reinterpret_cast<void **>(source.Put()))))
+        {
+            source->UnadviseSink(edit_sink_cookie_);
+        }
+        advised_context_->Release();
+        advised_context_ = nullptr;
+        edit_sink_cookie_ = TF_INVALID_COOKIE;
+    }
+    applying_edit_ = false;
+    ignore_next_edit_ = false;
     processing_enabled_ = false;
     session_.reset();
     if (context_identity_ == nullptr)

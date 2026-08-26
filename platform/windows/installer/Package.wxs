@@ -94,7 +94,7 @@
       <Custom
         Action="RegisterTsf"
         After="RollbackUnregisterTsf"
-        Condition='($TsfComponent=3) AND (?TsfComponent&lt;&gt;3)' />
+        Condition='$TsfComponent=3' />
     </InstallExecuteSequence>
   </Package>
 </Wix>

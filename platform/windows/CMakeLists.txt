@@ -58,7 +58,7 @@ if(WIN32)
     add_library(nakl_windows_settings STATIC src/settings.cpp)
     target_include_directories(nakl_windows_settings PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_compile_definitions(nakl_windows_settings PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
-    target_link_libraries(nakl_windows_settings PUBLIC advapi32)
+    target_link_libraries(nakl_windows_settings PUBLIC advapi32 ktmw32)
 
     add_library(nakl_tsf SHARED
         src/class_factory.cpp

@@ -11,7 +11,9 @@
 namespace nakl::windows
 {
 
-class TextService final : public ITfTextInputProcessorEx, public ITfKeyEventSink
+class TextService final : public ITfTextInputProcessorEx,
+                          public ITfKeyEventSink,
+                          public ITfTextEditSink
 {
   public:
     static HRESULT CreateInstance(REFIID interface_id, void **object);
@@ -36,6 +38,8 @@ class TextService final : public ITfTextInputProcessorEx, public ITfKeyEventSink
                                       BOOL *eaten) override;
     HRESULT STDMETHODCALLTYPE OnPreservedKey(ITfContext *context, REFGUID guid,
                                              BOOL *eaten) override;
+    HRESULT STDMETHODCALLTYPE OnEndEdit(ITfContext *context, TfEditCookie edit_cookie,
+                                        ITfEditRecord *edit_record) override;
 
   private:
     TextService() noexcept;
@@ -43,14 +47,19 @@ class TextService final : public ITfTextInputProcessorEx, public ITfKeyEventSink
 
     [[nodiscard]] bool IsSecureMode() const;
     [[nodiscard]] HRESULT EnsureContext(ITfContext *context);
+    [[nodiscard]] HRESULT AdviseContext(ITfContext *context);
     [[nodiscard]] bool ResetContext() noexcept;
     void ClearContext() noexcept;
 
     std::atomic<ULONG> reference_count_{1};
     ITfThreadMgr *thread_manager_ = nullptr;
     IUnknown *context_identity_ = nullptr;
+    ITfContext *advised_context_ = nullptr;
+    DWORD edit_sink_cookie_ = TF_INVALID_COOKIE;
     TfClientId client_id_ = TF_CLIENTID_NULL;
     bool processing_enabled_ = true;
+    bool applying_edit_ = false;
+    bool ignore_next_edit_ = false;
     std::unique_ptr<CompositionSession> session_;
 };
 
