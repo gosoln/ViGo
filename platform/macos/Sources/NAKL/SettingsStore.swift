@@ -10,6 +10,7 @@ enum SettingsKey {
   static let enabled = "input.enabled"
   static let method = "input.method"
   static let expansions = "textExpansions"
+  static let excludedApplications = "excludedApplications"
 }
 
 enum TypingMethod: String, CaseIterable, Codable, Identifiable {
@@ -38,6 +39,13 @@ struct TextExpansion: Codable, Hashable, Identifiable {
   }
 }
 
+struct ExcludedApplication: Codable, Equatable, Identifiable {
+  let bundleIdentifier: String
+  let displayName: String
+
+  var id: String { bundleIdentifier }
+}
+
 @MainActor
 final class SettingsStore: ObservableObject {
   private let defaults: UserDefaults
@@ -63,6 +71,13 @@ final class SettingsStore: ObservableObject {
     }
   }
 
+  @Published private(set) var excludedApplications: [ExcludedApplication] {
+    didSet {
+      persistExcludedApplications()
+      notifySettingsChanged()
+    }
+  }
+
   @Published private(set) var launchAtLogin: Bool
   @Published private(set) var launchAtLoginError: String?
 
@@ -82,6 +97,13 @@ final class SettingsStore: ObservableObject {
       expansions = saved
     } else {
       expansions = []
+    }
+    if let data = defaults.data(forKey: SettingsKey.excludedApplications),
+      let saved = try? JSONDecoder().decode([ExcludedApplication].self, from: data)
+    {
+      excludedApplications = saved
+    } else {
+      excludedApplications = []
     }
     launchAtLogin = SMAppService.mainApp.status == .enabled
   }
@@ -109,9 +131,34 @@ final class SettingsStore: ObservableObject {
     expansions.removeAll { $0.id == id }
   }
 
+  func isExcluded(bundleIdentifier: String) -> Bool {
+    excludedApplications.contains { $0.bundleIdentifier == bundleIdentifier }
+  }
+
+  func toggleExclusion(_ application: ExcludedApplication) {
+    if isExcluded(bundleIdentifier: application.bundleIdentifier) {
+      removeExcludedApplication(bundleIdentifier: application.bundleIdentifier)
+    } else {
+      excludedApplications.append(application)
+      excludedApplications.sort {
+        $0.displayName.localizedCaseInsensitiveCompare($1.displayName)
+          == .orderedAscending
+      }
+    }
+  }
+
+  func removeExcludedApplication(bundleIdentifier: String) {
+    excludedApplications.removeAll { $0.bundleIdentifier == bundleIdentifier }
+  }
+
   private func persistExpansions() {
     guard let data = try? JSONEncoder().encode(expansions) else { return }
     defaults.set(data, forKey: SettingsKey.expansions)
+  }
+
+  private func persistExcludedApplications() {
+    guard let data = try? JSONEncoder().encode(excludedApplications) else { return }
+    defaults.set(data, forKey: SettingsKey.excludedApplications)
   }
 
   private func notifySettingsChanged() {

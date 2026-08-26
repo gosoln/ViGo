@@ -157,6 +157,17 @@ func secureInputPassesThroughAndResetsOnTransitions() {
   #expect(policy.evaluate(isSecureInputEnabled: false) == .process(resetSession: true))
 }
 
+@Test("Excluded application policy bypasses only configured bundle identifiers")
+func excludedApplicationPolicyBypassesConfiguredIdentifiers() {
+  let policy = DirectInputApplicationPolicy(
+    excludedBundleIdentifiers: ["com.example.Editor"]
+  )
+
+  #expect(!policy.shouldProcess(bundleIdentifier: "com.example.Editor"))
+  #expect(policy.shouldProcess(bundleIdentifier: "com.example.Browser"))
+  #expect(policy.shouldProcess(bundleIdentifier: nil))
+}
+
 @Test("Direct typing commits text expansion on space")
 func directTypingCommitsTextExpansionOnSpace() throws {
   let engine = try #require(

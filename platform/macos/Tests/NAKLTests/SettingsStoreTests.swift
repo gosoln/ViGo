@@ -46,3 +46,25 @@ func accessibilityStatusRefreshesAndOpensSystemSettings() {
   authorization.openSystemSettings()
   #expect(openedURL == AccessibilityAuthorization.systemSettingsURL)
 }
+
+@Test("Excluded applications persist and can be removed")
+@MainActor
+func excludedApplicationsPersistAndCanBeRemoved() throws {
+  let suiteName = "ExcludedApplicationTests.\(UUID().uuidString)"
+  let defaults = try #require(UserDefaults(suiteName: suiteName))
+  defer { defaults.removePersistentDomain(forName: suiteName) }
+
+  let application = ExcludedApplication(
+    bundleIdentifier: "com.example.Editor",
+    displayName: "Editor"
+  )
+  let first = SettingsStore(defaults: defaults)
+  first.toggleExclusion(application)
+
+  let restored = SettingsStore(defaults: defaults)
+  #expect(restored.isExcluded(bundleIdentifier: application.bundleIdentifier))
+  #expect(restored.excludedApplications == [application])
+
+  restored.removeExcludedApplication(bundleIdentifier: application.bundleIdentifier)
+  #expect(restored.excludedApplications.isEmpty)
+}

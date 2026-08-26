@@ -20,8 +20,18 @@ struct DirectInputSecurityPolicy {
   }
 }
 
+struct DirectInputApplicationPolicy {
+  let excludedBundleIdentifiers: Set<String>
+
+  func shouldProcess(bundleIdentifier: String?) -> Bool {
+    guard let bundleIdentifier else { return true }
+    return !excludedBundleIdentifiers.contains(bundleIdentifier)
+  }
+}
+
 final class DirectInputTap {
   private var activeApplicationPID: pid_t?
+  private var applicationPolicy = DirectInputApplicationPolicy(excludedBundleIdentifiers: [])
   private var configuration = CoreConfigurationSnapshot()
   private var engine: DirectTypingEngine?
   private var eventTap: CFMachPort?
@@ -31,6 +41,7 @@ final class DirectInputTap {
 
   init() {
     engine = DirectTypingEngine(configuration: configuration)
+    refreshApplicationPolicy()
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(settingsDidChange),
@@ -120,10 +131,16 @@ final class DirectInputTap {
       return Unmanaged.passUnretained(event)
     }
 
-    let currentPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+    let activeApplication = NSWorkspace.shared.frontmostApplication
+    let currentPID = activeApplication?.processIdentifier
     if currentPID != activeApplicationPID {
       activeApplicationPID = currentPID
       resetSession()
+    }
+    guard applicationPolicy.shouldProcess(bundleIdentifier: activeApplication?.bundleIdentifier)
+    else {
+      resetSession()
+      return Unmanaged.passUnretained(event)
     }
 
     let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
@@ -160,6 +177,7 @@ final class DirectInputTap {
 
   @objc private func settingsDidChange() {
     configuration = CoreConfigurationSnapshot()
+    refreshApplicationPolicy()
     engine = DirectTypingEngine(configuration: configuration)
   }
 
@@ -174,6 +192,20 @@ final class DirectInputTap {
 
   private func resetSession() {
     engine?.reset()
+  }
+
+  private func refreshApplicationPolicy(defaults: UserDefaults = .standard) {
+    let applications: [ExcludedApplication]
+    if let data = defaults.data(forKey: SettingsKey.excludedApplications),
+      let saved = try? JSONDecoder().decode([ExcludedApplication].self, from: data)
+    {
+      applications = saved
+    } else {
+      applications = []
+    }
+    applicationPolicy = DirectInputApplicationPolicy(
+      excludedBundleIdentifiers: Set(applications.map(\.bundleIdentifier))
+    )
   }
 
   private func startSecureInputPolling() {

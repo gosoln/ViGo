@@ -80,6 +80,35 @@ private struct GeneralSettingsView: View {
       } footer: {
         Text("NAKL cần quyền này để nhập văn bản đã commit mà không tạo gạch chân.")
       }
+
+      if !settings.excludedApplications.isEmpty {
+        Section {
+          ForEach(settings.excludedApplications) { application in
+            HStack {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(application.displayName)
+                Text(application.bundleIdentifier)
+                  .font(.caption)
+                  .foregroundStyle(.secondary)
+              }
+              Spacer()
+              Button {
+                settings.removeExcludedApplication(
+                  bundleIdentifier: application.bundleIdentifier
+                )
+              } label: {
+                Image(systemName: "trash")
+              }
+              .buttonStyle(.borderless)
+              .help("Bỏ khỏi danh sách loại trừ")
+            }
+          }
+        } header: {
+          Text("Ứng dụng loại trừ")
+        } footer: {
+          Text("Thêm ứng dụng từ menu NAKL khi ứng dụng đó đang được sử dụng.")
+        }
+      }
     }
     .formStyle(.grouped)
   }

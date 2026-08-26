@@ -86,6 +86,7 @@ struct NAKLApp: App {
 private struct StatusMenu: View {
   @ObservedObject var accessibility: AccessibilityAuthorization
   @ObservedObject var settings: SettingsStore
+  @State private var activeApplication: ExcludedApplication?
 
   var body: some View {
     if accessibility.isGranted {
@@ -117,6 +118,18 @@ private struct StatusMenu: View {
       settings.isEnabled.toggle()
     }
 
+    if let activeApplication {
+      Button {
+        settings.toggleExclusion(activeApplication)
+      } label: {
+        if settings.isExcluded(bundleIdentifier: activeApplication.bundleIdentifier) {
+          Text("Bật trong \(activeApplication.displayName)")
+        } else {
+          Text("Tắt trong \(activeApplication.displayName)")
+        }
+      }
+    }
+
     Divider()
 
     if #available(macOS 14.0, *) {
@@ -138,5 +151,18 @@ private struct StatusMenu: View {
       NSApp.terminate(nil)
     }
     .keyboardShortcut("q")
+    .onAppear {
+      let application = NSWorkspace.shared.frontmostApplication
+      guard let bundleIdentifier = application?.bundleIdentifier,
+        bundleIdentifier != Bundle.main.bundleIdentifier
+      else {
+        activeApplication = nil
+        return
+      }
+      activeApplication = ExcludedApplication(
+        bundleIdentifier: bundleIdentifier,
+        displayName: application?.localizedName ?? bundleIdentifier
+      )
+    }
   }
 }
