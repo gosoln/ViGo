@@ -7,6 +7,7 @@ Use only the synthetic strings below in fresh, unsaved documents. Record the tes
 After the first local install, log out and back in. Keep `/Applications/NAKL.app` (legacy 0.2) closed, then run:
 
 ```sh
+platform/macos/scripts/smoke-installed.sh
 platform/macos/scripts/input-source-tool.swift select
 swift run --package-path platform/macos NAKLCompatibilityFixture
 ```
@@ -31,3 +32,5 @@ Restore ABC after testing with `platform/macos/scripts/input-source-tool.swift r
 | C12 | Type `tieengs` in a secure field | Seven raw characters; no crash or replacement |
 
 Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, and C12 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
+
+Record completed runs in [macOS compatibility results](./macos-compatibility-results.md). Treat unavailable licenses, unfinished first-run setup, or missing release credentials as BLOCKED rather than PASS.

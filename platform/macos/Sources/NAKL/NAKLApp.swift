@@ -10,10 +10,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let connectionName =
       Bundle.main.object(forInfoDictionaryKey: "InputMethodConnectionName")
       as? String ?? "com.nakl.inputmethod.NAKL_Connection"
+    guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+      preconditionFailure("NAKL requires a bundle identifier")
+    }
     inputMethodServer = IMKServer(
       name: connectionName,
-      controllerClass: NAKLInputController.self,
-      delegateClass: nil
+      bundleIdentifier: bundleIdentifier
     )
   }
 }

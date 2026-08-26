@@ -5,6 +5,7 @@ import InputMethodKit
 final class NAKLInputController: IMKInputController {
   private var activeConfiguration: CoreConfigurationSnapshot?
   private var coreSession: CoreSession?
+  private var markedComposition = MarkedComposition()
   private var configurationNeedsRefresh = true
 
   override init!(server: IMKServer!, delegate: Any!, client inputClient: Any!) {
@@ -27,10 +28,16 @@ final class NAKLInputController: IMKInputController {
   }
 
   override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
-    guard let event, let sender, event.type == .keyDown else { return false }
+    guard let event, let client = sender as? any IMKTextInput, event.type == .keyDown else {
+      return false
+    }
+    if configurationNeedsRefresh {
+      commitMarkedComposition(to: client)
+    }
     refreshConfigurationIfNeeded()
 
     guard activeConfiguration?.isEnabled == true, let coreSession else {
+      commitMarkedComposition(to: client)
       resetComposition()
       return false
     }
@@ -43,29 +50,55 @@ final class NAKLInputController: IMKInputController {
     )
     switch normalizedEvent {
     case .boundary:
+      commitMarkedComposition(to: client)
       resetComposition()
       return false
     case .backspace:
       _ = coreSession.process(.backspace)
-      return false
-    case .text:
-      break
-    }
+      guard markedComposition.removeLastScalar() else { return false }
+      updateMarkedComposition(in: client)
+      return true
+    case .text(let scalar):
+      let action = coreSession.process(normalizedEvent)
+      if scalar == " " {
+        switch action {
+        case .passThrough:
+          commitMarkedComposition(to: client)
+          return false
+        case .replaceBefore:
+          guard markedComposition.apply(action, passThroughScalar: scalar) else {
+            commitMarkedComposition(to: client)
+            resetComposition()
+            return false
+          }
+          commitMarkedComposition(to: client)
+          return true
+        }
+      }
 
-    switch coreSession.process(normalizedEvent) {
-    case .passThrough:
-      return false
-    case .replaceBefore(let deleteScalars, let insert):
-      return replaceText(
-        before: sender,
-        deletingScalarCount: deleteScalars,
-        with: insert
-      )
+      guard markedComposition.apply(action, passThroughScalar: scalar) else {
+        commitMarkedComposition(to: client)
+        resetComposition()
+        return false
+      }
+      updateMarkedComposition(in: client)
+      return true
     }
   }
 
   override func commitComposition(_ sender: Any!) {
+    if let client = sender as? any IMKTextInput {
+      commitMarkedComposition(to: client)
+    }
     resetComposition()
+  }
+
+  override func deactivateServer(_ sender: Any!) {
+    if let client = sender as? any IMKTextInput {
+      commitMarkedComposition(to: client)
+    }
+    resetComposition()
+    super.deactivateServer(sender)
   }
 
   @objc private func settingsDidChange() {
@@ -83,43 +116,32 @@ final class NAKLInputController: IMKInputController {
 
   private func resetComposition() {
     _ = coreSession?.process(.boundary)
+    markedComposition.clear()
   }
 
-  private func replaceText(
-    before sender: Any,
-    deletingScalarCount: Int,
-    with insert: String
-  ) -> Bool {
-    guard let client = sender as? any IMKTextInput else {
-      resetComposition()
-      return false
-    }
+  private func updateMarkedComposition(in client: any IMKTextInput) {
+    let attributes =
+      mark(
+        forStyle: kTSMHiliteConvertedText,
+        at: NSRange(location: NSNotFound, length: 0)
+      ) as? [NSAttributedString.Key: Any] ?? [:]
+    let markedText = NSAttributedString(
+      string: markedComposition.text,
+      attributes: attributes
+    )
+    client.setMarkedText(
+      markedText,
+      selectionRange: NSRange(location: markedComposition.text.utf16.count, length: 0),
+      replacementRange: NSRange(location: NSNotFound, length: 0)
+    )
+  }
 
-    let selection = client.selectedRange()
-    guard selection.location != NSNotFound, selection.length == 0 else {
-      resetComposition()
-      return false
-    }
-
-    let maximumLookback = deletingScalarCount.multipliedReportingOverflow(by: 2)
-    guard !maximumLookback.overflow else {
-      resetComposition()
-      return false
-    }
-    let lookback = min(selection.location, maximumLookback.partialValue)
-    let contextRange = NSRange(location: selection.location - lookback, length: lookback)
-    guard let precedingText = client.attributedSubstring(from: contextRange)?.string,
-      let replacementRange = ReplacementRangeResolver.resolve(
-        selection: selection,
-        deletingScalarCount: deletingScalarCount,
-        precedingText: precedingText
-      )
-    else {
-      resetComposition()
-      return false
-    }
-
-    client.insertText(insert, replacementRange: replacementRange)
-    return true
+  private func commitMarkedComposition(to client: any IMKTextInput) {
+    guard !markedComposition.isEmpty else { return }
+    client.insertText(
+      markedComposition.text,
+      replacementRange: NSRange(location: NSNotFound, length: NSNotFound)
+    )
+    markedComposition.clear()
   }
 }

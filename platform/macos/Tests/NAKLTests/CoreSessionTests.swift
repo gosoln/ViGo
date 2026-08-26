@@ -22,29 +22,67 @@ func coreSessionAppliesTextExpansion() throws {
   )
 }
 
-@Test("Replacement ranges use UTF-16 document offsets")
-func replacementRangesUseUTF16Offsets() {
-  #expect(
-    ReplacementRangeResolver.resolve(
-      selection: NSRange(location: 5, length: 0),
-      deletingScalarCount: 3,
-      precedingText: "abc"
-    ) == NSRange(location: 2, length: 3)
+@Test("Marked composition follows core replacement actions")
+func markedCompositionFollowsCoreReplacementActions() throws {
+  let session = try #require(
+    CoreSession(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: []
+      )
+    )
   )
-  #expect(
-    ReplacementRangeResolver.resolve(
-      selection: NSRange(location: 4, length: 0),
-      deletingScalarCount: 1,
-      precedingText: "a😀"
-    ) == NSRange(location: 2, length: 2)
+  var composition = MarkedComposition()
+
+  for scalar in "tieengs".unicodeScalars {
+    let applied = composition.apply(
+      session.process(.text(scalar)),
+      passThroughScalar: scalar
+    )
+    #expect(applied)
+  }
+
+  #expect(composition.text == "tiếng")
+  #expect(session.process(.backspace) == .passThrough)
+  let removed = composition.removeLastScalar()
+  #expect(removed)
+  #expect(composition.text == "tiến")
+
+  let retuned = composition.apply(
+    session.process(.text("f")),
+    passThroughScalar: "f"
   )
-  #expect(
-    ReplacementRangeResolver.resolve(
-      selection: NSRange(location: 2, length: 0),
-      deletingScalarCount: 1,
-      precedingText: "ế"
-    ) == NSRange(location: 1, length: 1)
+  #expect(retuned)
+  #expect(composition.text == "tiền")
+}
+
+@Test("Marked composition applies expansion before commit")
+func markedCompositionAppliesExpansionBeforeCommit() throws {
+  let session = try #require(
+    CoreSession(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: [TextExpansion(shortcut: "btw", replacement: "by the way")]
+      )
+    )
   )
+  var composition = MarkedComposition()
+
+  for scalar in "btw".unicodeScalars {
+    let applied = composition.apply(
+      session.process(.text(scalar)),
+      passThroughScalar: scalar
+    )
+    #expect(applied)
+  }
+  let expanded = composition.apply(
+    session.process(.text(" ")),
+    passThroughScalar: " "
+  )
+  #expect(expanded)
+  #expect(composition.text == "by the way ")
 }
 
 @Test("macOS key events normalize to semantic core events")
