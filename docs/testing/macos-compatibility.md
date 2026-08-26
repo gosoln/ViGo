@@ -8,6 +8,11 @@ After the first local install, log out and back in. Keep `/Applications/NAKL.app
 
 ```sh
 platform/macos/scripts/smoke-installed.sh
+```
+
+The smoke test keeps ABC selected and validates the committed-input regressions `giai` + `r` → `giải` and `cha` + `f` → `chà` in an unsaved TextEdit document. To exercise the transitional InputMethodKit path separately, run:
+
+```sh
 platform/macos/scripts/input-source-tool.swift select
 swift run --package-path platform/macos NAKLCompatibilityFixture
 ```
