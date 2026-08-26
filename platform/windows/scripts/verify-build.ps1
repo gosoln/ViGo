@@ -1,6 +1,9 @@
 param(
     [Parameter(Mandatory = $false)]
-    [string]$DllPath = "build/windows/Debug/NAKLTSF.dll"
+    [string]$DllPath = "build/windows/Debug/NAKLTSF.dll",
+
+    [Parameter(Mandatory = $false)]
+    [string]$SettingsPath = "build/windows/Debug/NAKLSettings.exe"
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,3 +30,11 @@ foreach ($requiredExport in @(
 }
 
 Write-Host "PASS: x64 TSF DLL and COM exports are present."
+
+$resolvedSettings = (Resolve-Path -LiteralPath $SettingsPath).Path
+$settingsHeaders = (& dumpbin /headers $resolvedSettings | Out-String)
+if ($LASTEXITCODE -ne 0 -or $settingsHeaders -notmatch "machine \(x64\)") {
+    throw "NAKLSettings.exe is not a valid x64 image."
+}
+
+Write-Host "PASS: x64 settings application is present."

@@ -50,6 +50,7 @@ class TextService final : public ITfTextInputProcessorEx, public ITfKeyEventSink
     ITfThreadMgr *thread_manager_ = nullptr;
     IUnknown *context_identity_ = nullptr;
     TfClientId client_id_ = TF_CLIENTID_NULL;
+    bool processing_enabled_ = true;
     std::unique_ptr<CompositionSession> session_;
 };
 

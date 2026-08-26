@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace nakl::windows
 {
@@ -42,10 +43,17 @@ struct EditAction
     std::u16string insert;
 };
 
+struct TextExpansion
+{
+    std::string trigger;
+    std::string replacement;
+};
+
 class CompositionSession final
 {
   public:
-    explicit CompositionSession(TypingMethod method) noexcept;
+    explicit CompositionSession(TypingMethod method,
+                                const std::vector<TextExpansion> &expansions = {}) noexcept;
     ~CompositionSession();
 
     CompositionSession(const CompositionSession &) = delete;

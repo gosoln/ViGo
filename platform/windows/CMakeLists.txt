@@ -5,6 +5,11 @@ project(NAKLWindows LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+if(MSVC)
+    # Rust's x86_64-pc-windows-msvc staticlib requests the dynamic release CRT
+    # even for Cargo debug builds. Keep allocator/runtime ownership consistent.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+endif()
 
 get_filename_component(NAKL_REPOSITORY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 
@@ -44,12 +49,17 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    target_compile_options(nakl_windows_composition PRIVATE /W4 /WX /permissive-)
+    target_compile_options(nakl_windows_composition PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
 else()
     target_compile_options(nakl_windows_composition PRIVATE -Wall -Wextra -Werror)
 endif()
 
 if(WIN32)
+    add_library(nakl_windows_settings STATIC src/settings.cpp)
+    target_include_directories(nakl_windows_settings PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_compile_definitions(nakl_windows_settings PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_link_libraries(nakl_windows_settings PUBLIC advapi32)
+
     add_library(nakl_tsf SHARED
         src/class_factory.cpp
         src/dll_main.cpp
@@ -68,6 +78,7 @@ if(WIN32)
     endif()
     target_link_libraries(nakl_tsf PRIVATE
         nakl_windows_composition
+        nakl_windows_settings
         advapi32
         msctf
         ole32
@@ -76,6 +87,25 @@ if(WIN32)
     )
     set_target_properties(nakl_tsf PROPERTIES PREFIX "" OUTPUT_NAME "NAKLTSF")
     install(TARGETS nakl_tsf RUNTIME DESTINATION bin LIBRARY DESTINATION bin)
+
+    add_executable(nakl_settings WIN32 src/settings_app.cpp)
+    target_include_directories(nakl_settings PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_compile_definitions(nakl_settings PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_link_libraries(nakl_settings PRIVATE nakl_windows_settings comctl32 shell32 user32)
+    set_target_properties(nakl_settings PROPERTIES OUTPUT_NAME "NAKLSettings")
+    install(TARGETS nakl_settings RUNTIME DESTINATION bin)
+endif()
+
+if(MSVC)
+    target_compile_options(nakl_windows_settings PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+    target_compile_options(nakl_tsf PRIVATE /utf-8)
+    target_compile_options(nakl_settings PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
+elseif(WIN32)
+    target_compile_options(nakl_windows_settings PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(nakl_settings PRIVATE -Wall -Wextra -Werror)
+    if(MINGW)
+        target_link_options(nakl_settings PRIVATE -municode)
+    endif()
 endif()
 
 include(CTest)
@@ -83,7 +113,7 @@ if(BUILD_TESTING)
     add_executable(nakl_windows_contract_tests tests/composition_session_tests.cpp)
     target_link_libraries(nakl_windows_contract_tests PRIVATE nakl_windows_composition)
     if(MSVC)
-        target_compile_options(nakl_windows_contract_tests PRIVATE /W4 /WX /permissive-)
+        target_compile_options(nakl_windows_contract_tests PRIVATE /W4 /WX /permissive- /EHsc /utf-8)
     else()
         target_compile_options(nakl_windows_contract_tests PRIVATE -Wall -Wextra -Werror)
     endif()

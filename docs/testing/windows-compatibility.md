@@ -13,7 +13,7 @@ cmake --build build/windows --config Debug
 ctest --test-dir build/windows -C Debug --output-on-failure
 ```
 
-The fake editor must pass R1–R5 from [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md) and assert both deletion count and inserted UTF-16 text.
+The fake editor must pass R1–R5 from [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md), assert both deletion count and inserted UTF-16 text, and commit a configured Text Expansion on space.
 
 ## Required System Cases
 
@@ -29,9 +29,14 @@ The fake editor must pass R1–R5 from [Cross-Platform Composition Regressions](
 | W8 | Expansion `btw` → `by the way`, then type `btw ` | `by the way ` |
 | W9 | Disable NAKL and type `tieengs`, then re-enable | Literal while disabled; W1 after re-enable |
 | W10 | Install, repair, upgrade, rollback, and uninstall MSI | Profile/receipt state is correct and settings survive supported transitions |
+| W11 | Add the current `.exe` to exclusions, refocus, type `tieengs` | Literal input; W1 after removing the exclusion and refocusing |
+| W12 | Invoke configured toggle and method-switch hot keys | Enabled state and Telex/VNI selection change once per press |
 
-Run W1–W9 in Win32 Notepad, Microsoft Word, a WinUI text field, Chrome, and one app-container client. Repeat focus switching across two applications. Confirm the TSF DLL performs no network access and remains functional under app-container restrictions.
+Run W1–W9 and W11–W12 in Win32 Notepad, Microsoft Word, a WinUI text field, Chrome, and one app-container client. Repeat focus switching across two applications. Confirm the TSF DLL performs no network access and remains functional under app-container restrictions.
 
 ## Current Status
 
-The portable adapter contract passes on macOS host tooling. Windows DLL build, signing, registration, real-client execution, and MSI lifecycle remain BLOCKED until run on a Windows 11 x64 runner or machine.
+The portable adapter contract, including Text Expansion, passes on macOS host tooling. The native
+DLL/settings/MSI sources and Windows CI gates are authored. Windows-native compile evidence,
+signing, registration, real-client execution, and MSI lifecycle remain BLOCKED until run on a
+Windows 11 x64 runner or machine. Do not mark W1–W10 PASS from portable tests.

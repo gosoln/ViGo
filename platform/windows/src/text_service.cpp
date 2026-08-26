@@ -3,6 +3,7 @@
 #include "com_ptr.h"
 #include "edit_session.h"
 #include "module_state.h"
+#include "settings.h"
 
 #include <array>
 #include <iterator>
@@ -222,7 +223,7 @@ HRESULT TextService::OnSetFocus(BOOL foreground)
 {
     if (foreground == FALSE)
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
     }
     return S_OK;
 }
@@ -236,13 +237,17 @@ HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l
     *eaten = FALSE;
     if (context == nullptr || IsSecureMode())
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return S_OK;
     }
     HRESULT result = EnsureContext(context);
     if (FAILED(result))
     {
         return result;
+    }
+    if (!processing_enabled_)
+    {
+        return S_OK;
     }
 
     const NormalizedKey key = NormalizeKey(w_param, l_param);
@@ -257,17 +262,17 @@ HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l
     }
     catch (const std::bad_alloc &)
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return E_OUTOFMEMORY;
     }
     catch (...)
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return E_UNEXPECTED;
     }
     if (!action.has_value())
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return S_OK;
     }
     *eaten = action->kind == EditAction::Kind::ReplaceBefore ? TRUE : FALSE;
@@ -296,13 +301,17 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
     *eaten = FALSE;
     if (context == nullptr || IsSecureMode())
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return S_OK;
     }
     HRESULT result = EnsureContext(context);
     if (FAILED(result))
     {
         return result;
+    }
+    if (!processing_enabled_)
+    {
+        return S_OK;
     }
 
     const NormalizedKey key = NormalizeKey(w_param, l_param);
@@ -318,17 +327,17 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
     }
     catch (const std::bad_alloc &)
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return E_OUTOFMEMORY;
     }
     catch (...)
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return E_UNEXPECTED;
     }
     if (!action.has_value())
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
         return S_OK;
     }
     if (action->kind == EditAction::Kind::PassThrough)
@@ -343,7 +352,7 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
     }
     else
     {
-        static_cast<void>(ResetContext());
+        ClearContext();
     }
     return S_OK;
 }
@@ -399,7 +408,7 @@ HRESULT TextService::EnsureContext(ITfContext *context)
         context_identity_ = identity.Get();
         context_identity_->AddRef();
     }
-    if (session_ == nullptr || !session_->valid())
+    if (processing_enabled_ && (session_ == nullptr || !session_->valid()))
     {
         return E_OUTOFMEMORY;
     }
@@ -409,12 +418,27 @@ HRESULT TextService::EnsureContext(ITfContext *context)
 bool TextService::ResetContext() noexcept
 {
     ClearContext();
-    session_.reset(new (std::nothrow) CompositionSession(TypingMethod::Telex));
-    return session_ != nullptr && session_->valid();
+    try
+    {
+        const SettingsSnapshot settings = LoadSettings();
+        processing_enabled_ = settings.enabled && !IsCurrentProcessExcluded(settings);
+        if (!processing_enabled_)
+        {
+            return true;
+        }
+        session_.reset(new (std::nothrow) CompositionSession(settings.method, settings.expansions));
+        return session_ != nullptr && session_->valid();
+    }
+    catch (...)
+    {
+        processing_enabled_ = false;
+        return false;
+    }
 }
 
 void TextService::ClearContext() noexcept
 {
+    processing_enabled_ = false;
     session_.reset();
     if (context_identity_ == nullptr)
     {

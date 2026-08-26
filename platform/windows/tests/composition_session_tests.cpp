@@ -12,6 +12,7 @@ using nakl::windows::CompositionSession;
 using nakl::windows::EditAction;
 using nakl::windows::EventKind;
 using nakl::windows::InputEvent;
+using nakl::windows::TextExpansion;
 using nakl::windows::TypingMethod;
 using nakl::windows::Utf16UnitsForTrailingScalars;
 
@@ -44,7 +45,8 @@ void AppendScalar(std::u16string &text, char32_t scalar)
 class FakeEditor
 {
   public:
-    explicit FakeEditor(TypingMethod method) : session_(method)
+    explicit FakeEditor(TypingMethod method, const std::vector<TextExpansion> &expansions = {})
+        : session_(method, expansions)
     {
         Expect(session_.valid(), "core session must be created");
     }
@@ -133,6 +135,13 @@ int main()
     Expect(Utf16UnitsForTrailingScalars(supplementary, 2) == 3,
            "two trailing scalars must include the preceding BMP unit");
 
-    std::cout << "PASS: Windows composition contract R1-R5\n";
+    FakeEditor expansion_editor(TypingMethod::Telex, {{"btw", "by the way"}});
+    for (char32_t scalar : std::u32string_view(U"btw "))
+    {
+        expansion_editor.Type(scalar);
+    }
+    Expect(expansion_editor.text() == u"by the way ", "text expansion contract must apply");
+
+    std::cout << "PASS: Windows composition contract R1-R5 and expansion\n";
     return 0;
 }

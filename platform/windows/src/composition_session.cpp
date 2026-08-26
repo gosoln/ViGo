@@ -141,9 +141,32 @@ namespace
 
 struct CompositionSession::Impl
 {
-    explicit Impl(TypingMethod selected_method)
-        : method(selected_method), handle(nakl_session_new(static_cast<std::uint32_t>(method)))
+    Impl(TypingMethod method, const std::vector<TextExpansion> &expansions)
     {
+        NaklConfig *config = nakl_config_new();
+        if (config == nullptr)
+        {
+            return;
+        }
+        bool valid_config = true;
+        for (const auto &expansion : expansions)
+        {
+            if (expansion.trigger.empty() ||
+                nakl_config_add_text_expansion(
+                    config, reinterpret_cast<const std::uint8_t *>(expansion.trigger.data()),
+                    expansion.trigger.size(),
+                    reinterpret_cast<const std::uint8_t *>(expansion.replacement.data()),
+                    expansion.replacement.size()) != NAKL_STATUS_OK)
+            {
+                valid_config = false;
+                break;
+            }
+        }
+        if (valid_config)
+        {
+            handle = nakl_session_new_with_config(static_cast<std::uint32_t>(method), config);
+        }
+        nakl_config_free(config);
     }
 
     ~Impl()
@@ -151,12 +174,12 @@ struct CompositionSession::Impl
         nakl_session_free(handle);
     }
 
-    TypingMethod method;
-    NaklSession *handle;
+    NaklSession *handle = nullptr;
 };
 
-CompositionSession::CompositionSession(TypingMethod method) noexcept
-    : impl_(new (std::nothrow) Impl(method))
+CompositionSession::CompositionSession(TypingMethod method,
+                                       const std::vector<TextExpansion> &expansions) noexcept
+    : impl_(new (std::nothrow) Impl(method, expansions))
 {
 }
 
@@ -203,7 +226,7 @@ void CompositionSession::Reset() noexcept
     const auto ignored = Process(InputEvent{.kind = EventKind::Boundary});
     if (!ignored.has_value())
     {
-        impl_.reset(new (std::nothrow) Impl(impl_->method));
+        impl_.reset();
     }
 }
 

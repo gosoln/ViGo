@@ -1,0 +1,93 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Id="NAKL.InputMethod.Windows"
+    Name="NAKL"
+    Manufacturer="NAKL contributors"
+    Version="2.0.0"
+    Scope="perMachine">
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="NAKL">
+        <Component Id="TsfComponent" Guid="*" Bitness="always64">
+          <File Id="TsfDll" Source="$(var.NAKLBuildDir)\NAKLTSF.dll" KeyPath="yes" />
+        </Component>
+        <Component Id="SettingsComponent" Guid="*" Bitness="always64">
+          <File Id="SettingsExe" Source="$(var.NAKLBuildDir)\NAKLSettings.exe" KeyPath="yes">
+            <Shortcut
+              Id="SettingsShortcut"
+              Directory="ProgramMenuFolder"
+              Name="NAKL"
+              Description="Tùy chọn bộ gõ tiếng Việt NAKL"
+              Arguments="--settings"
+              WorkingDirectory="INSTALLFOLDER" />
+          </File>
+        </Component>
+        <Component Id="LicenseComponent" Guid="*" Bitness="always64">
+          <File Id="LicenseFile" Source="$(var.RepositoryDir)\LICENSE" Name="LICENSE.txt" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Feature Id="MainFeature" Title="NAKL" Level="1">
+      <ComponentRef Id="TsfComponent" />
+      <ComponentRef Id="SettingsComponent" />
+      <ComponentRef Id="LicenseComponent" />
+    </Feature>
+
+    <CustomAction
+      Id="RegisterTsf"
+      Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]regsvr32.exe&quot; /s &quot;[#TsfDll]&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+    <CustomAction
+      Id="RollbackUnregisterTsf"
+      Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]regsvr32.exe&quot; /u /s &quot;[#TsfDll]&quot;"
+      Execute="rollback"
+      Impersonate="no"
+      Return="ignore" />
+    <CustomAction
+      Id="UnregisterTsf"
+      Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]regsvr32.exe&quot; /u /s &quot;[#TsfDll]&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+    <CustomAction
+      Id="RollbackRegisterTsf"
+      Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]regsvr32.exe&quot; /s &quot;[#TsfDll]&quot;"
+      Execute="rollback"
+      Impersonate="no"
+      Return="ignore" />
+    <CustomAction
+      Id="RemoveCurrentUserStartup"
+      Directory="System64Folder"
+      ExeCommand="reg.exe delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v NAKL /f"
+      Execute="immediate"
+      Impersonate="yes"
+      Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RollbackRegisterTsf" Before="UnregisterTsf" Condition='REMOVE~="ALL"' />
+      <Custom Action="UnregisterTsf" Before="RemoveFiles" Condition='REMOVE~="ALL"' />
+      <Custom
+        Action="RemoveCurrentUserStartup"
+        Before="UnregisterTsf"
+        Condition='REMOVE~="ALL"' />
+      <Custom
+        Action="RollbackUnregisterTsf"
+        After="InstallFiles"
+        Condition='NOT (REMOVE~="ALL")' />
+      <Custom
+        Action="RegisterTsf"
+        After="RollbackUnregisterTsf"
+        Condition='NOT (REMOVE~="ALL")' />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>
