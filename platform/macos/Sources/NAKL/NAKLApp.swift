@@ -66,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct NAKLApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var accessibility = AccessibilityAuthorization.shared
+  @StateObject private var activeApplication = ActiveApplicationMonitor()
   @StateObject private var settings = SettingsStore.shared
 
   var body: some Scene {
@@ -73,7 +74,11 @@ struct NAKLApp: App {
       "NAKL",
       systemImage: menuBarIcon
     ) {
-      StatusMenu(accessibility: accessibility, settings: settings)
+      StatusMenu(
+        accessibility: accessibility,
+        activeApplicationMonitor: activeApplication,
+        settings: settings
+      )
     }
     .menuBarExtraStyle(.menu)
 
@@ -123,8 +128,8 @@ private struct ModernSettingsButton: View {
 
 private struct StatusMenu: View {
   @ObservedObject var accessibility: AccessibilityAuthorization
+  @ObservedObject var activeApplicationMonitor: ActiveApplicationMonitor
   @ObservedObject var settings: SettingsStore
-  @State private var activeApplication: ExcludedApplication?
 
   var body: some View {
     if accessibility.isGranted {
@@ -156,7 +161,7 @@ private struct StatusMenu: View {
       settings.isEnabled.toggle()
     }
 
-    if let activeApplication {
+    if let activeApplication = activeApplicationMonitor.activeApplication {
       Button {
         settings.toggleExclusion(activeApplication)
       } label: {
@@ -188,18 +193,5 @@ private struct StatusMenu: View {
       NSApp.terminate(nil)
     }
     .keyboardShortcut("q")
-    .onAppear {
-      let application = NSWorkspace.shared.frontmostApplication
-      guard let bundleIdentifier = application?.bundleIdentifier,
-        bundleIdentifier != Bundle.main.bundleIdentifier
-      else {
-        activeApplication = nil
-        return
-      }
-      activeApplication = ExcludedApplication(
-        bundleIdentifier: bundleIdentifier,
-        displayName: application?.localizedName ?? bundleIdentifier
-      )
-    }
   }
 }

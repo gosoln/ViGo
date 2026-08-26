@@ -3,6 +3,33 @@ import Testing
 
 @testable import NAKL
 
+@Test("Active application follows foreground changes and ignores NAKL itself")
+@MainActor
+func activeApplicationFollowsForegroundChanges() {
+  let monitor = ActiveApplicationMonitor(
+    ownBundleIdentifier: "com.nakl.inputmethod.NAKL",
+    observeWorkspace: false
+  )
+
+  monitor.recordActivation(
+    bundleIdentifier: "com.apple.finder",
+    displayName: "Finder"
+  )
+  #expect(monitor.activeApplication?.displayName == "Finder")
+
+  monitor.recordActivation(
+    bundleIdentifier: "com.google.Chrome",
+    displayName: "Google Chrome"
+  )
+  #expect(monitor.activeApplication?.displayName == "Google Chrome")
+
+  monitor.recordActivation(
+    bundleIdentifier: "com.nakl.inputmethod.NAKL",
+    displayName: "NAKL"
+  )
+  #expect(monitor.activeApplication?.displayName == "Google Chrome")
+}
+
 @Test("Settings menu opens its window and activates NAKL")
 @MainActor
 func settingsMenuOpensAndActivatesApplication() {
