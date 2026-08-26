@@ -2,8 +2,6 @@ import AppKit
 import ApplicationServices
 import Carbon
 
-private let accessibilityPromptKey = "AXTrustedCheckOptionPrompt"
-
 enum DirectInputSecurityDecision: Equatable {
   case process(resetSession: Bool)
   case passThrough(resetSession: Bool)
@@ -51,10 +49,6 @@ final class DirectInputTap {
     NotificationCenter.default.removeObserver(self)
     NSWorkspace.shared.notificationCenter.removeObserver(self)
     stop()
-  }
-
-  static func requestAccessibilityPermission() -> Bool {
-    AXIsProcessTrustedWithOptions([accessibilityPromptKey: true] as CFDictionary)
   }
 
   @discardableResult

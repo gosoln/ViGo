@@ -24,3 +24,25 @@ func settingsPersistBetweenStoreInstances() throws {
   #expect(restored.expansions[0].shortcut == "dc")
   #expect(restored.expansions[0].replacement == "được")
 }
+
+@Test("Accessibility status refreshes and opens the correct system pane")
+@MainActor
+func accessibilityStatusRefreshesAndOpensSystemSettings() {
+  var isGranted = false
+  var openedURL: URL?
+  let authorization = AccessibilityAuthorization(
+    checkAuthorization: { isGranted },
+    requestSystemAuthorization: {
+      isGranted = true
+      return true
+    },
+    openURL: { openedURL = $0 }
+  )
+
+  #expect(!authorization.isGranted)
+  authorization.request()
+  #expect(authorization.isGranted)
+
+  authorization.openSystemSettings()
+  #expect(openedURL == AccessibilityAuthorization.systemSettingsURL)
+}

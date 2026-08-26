@@ -1,11 +1,12 @@
 import SwiftUI
 
 struct SettingsView: View {
+  @ObservedObject var accessibility: AccessibilityAuthorization
   @ObservedObject var settings: SettingsStore
 
   var body: some View {
     TabView {
-      GeneralSettingsView(settings: settings)
+      GeneralSettingsView(accessibility: accessibility, settings: settings)
         .tabItem {
           Label("Tùy chọn", systemImage: "gearshape")
         }
@@ -26,6 +27,7 @@ struct SettingsView: View {
 }
 
 private struct GeneralSettingsView: View {
+  @ObservedObject var accessibility: AccessibilityAuthorization
   @ObservedObject var settings: SettingsStore
 
   private var launchAtLoginBinding: Binding<Bool> {
@@ -58,6 +60,25 @@ private struct GeneralSettingsView: View {
         Text("Bộ gõ")
       } footer: {
         Text("Thiết lập được lưu cục bộ trên máy và áp dụng cho các phiên gõ mới.")
+      }
+
+      Section {
+        HStack {
+          Label("Accessibility", systemImage: "hand.raised")
+          Spacer()
+          if accessibility.isGranted {
+            Label("Đã cấp", systemImage: "checkmark.circle.fill")
+              .foregroundStyle(.green)
+          } else {
+            Button("Mở Cài đặt hệ thống…") {
+              accessibility.openSystemSettings()
+            }
+          }
+        }
+      } header: {
+        Text("Quyền hệ thống")
+      } footer: {
+        Text("NAKL cần quyền này để nhập văn bản đã commit mà không tạo gạch chân.")
       }
     }
     .formStyle(.grouped)

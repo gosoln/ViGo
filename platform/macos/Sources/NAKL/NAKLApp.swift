@@ -4,9 +4,10 @@ import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-  private var accessibilityPollTimer: Timer?
+  private let accessibility = AccessibilityAuthorization.shared
   private var directInputTap: DirectInputTap?
   private var inputMethodServer: IMKServer?
+  private var runtimeStatusPollTimer: Timer?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     let connectionName =
@@ -22,22 +23,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     let directInputTap = DirectInputTap()
     self.directInputTap = directInputTap
-    if !directInputTap.startIfPermitted() {
-      _ = DirectInputTap.requestAccessibilityPermission()
-      accessibilityPollTimer = Timer.scheduledTimer(
-        timeInterval: 1,
-        target: self,
-        selector: #selector(startDirectInputWhenPermitted(_:)),
-        userInfo: nil,
-        repeats: true
-      )
+    accessibility.refresh()
+    if !accessibility.isGranted {
+      accessibility.request()
     }
+    refreshRuntimeStatus()
+    runtimeStatusPollTimer = Timer.scheduledTimer(
+      timeInterval: 1,
+      target: self,
+      selector: #selector(pollRuntimeStatus(_:)),
+      userInfo: nil,
+      repeats: true
+    )
   }
 
-  @objc private func startDirectInputWhenPermitted(_ timer: Timer) {
-    if directInputTap?.startIfPermitted() == true {
-      timer.invalidate()
-      accessibilityPollTimer = nil
+  func applicationWillTerminate(_ notification: Notification) {
+    runtimeStatusPollTimer?.invalidate()
+    runtimeStatusPollTimer = nil
+    directInputTap?.stop()
+  }
+
+  @objc private func pollRuntimeStatus(_ timer: Timer) {
+    refreshRuntimeStatus()
+  }
+
+  private func refreshRuntimeStatus() {
+    accessibility.refresh()
+    if accessibility.isGranted {
+      _ = directInputTap?.startIfPermitted()
+    } else {
+      directInputTap?.stop()
     }
   }
 }
@@ -45,27 +60,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct NAKLApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+  @StateObject private var accessibility = AccessibilityAuthorization.shared
   @StateObject private var settings = SettingsStore()
 
   var body: some Scene {
     MenuBarExtra(
       "NAKL",
-      systemImage: settings.isEnabled ? "keyboard.fill" : "keyboard"
+      systemImage: menuBarIcon
     ) {
-      StatusMenu(settings: settings)
+      StatusMenu(accessibility: accessibility, settings: settings)
     }
     .menuBarExtraStyle(.menu)
 
     Settings {
-      SettingsView(settings: settings)
+      SettingsView(accessibility: accessibility, settings: settings)
     }
+  }
+
+  private var menuBarIcon: String {
+    if !accessibility.isGranted { return "exclamationmark.triangle" }
+    return settings.isEnabled ? "keyboard.fill" : "keyboard"
   }
 }
 
 private struct StatusMenu: View {
+  @ObservedObject var accessibility: AccessibilityAuthorization
   @ObservedObject var settings: SettingsStore
 
   var body: some View {
+    if accessibility.isGranted {
+      Label("Đang hoạt động", systemImage: "checkmark.circle")
+    } else {
+      Button {
+        accessibility.openSystemSettings()
+      } label: {
+        Label("Cần cấp quyền Accessibility…", systemImage: "exclamationmark.triangle")
+      }
+    }
+
+    Divider()
+
     ForEach(TypingMethod.allCases) { method in
       Button {
         settings.method = method
