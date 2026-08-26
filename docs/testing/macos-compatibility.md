@@ -8,9 +8,10 @@ After the first local install, log out and back in. Keep `/Applications/NAKL.app
 
 ```sh
 platform/macos/scripts/smoke-installed.sh
+platform/macos/scripts/smoke-secure-input.sh
 ```
 
-The smoke test keeps ABC selected and validates the committed-input regressions `giai` + `r` → `giải` and `cha` + `f` → `chà` in an unsaved TextEdit document. To exercise the transitional InputMethodKit path separately, run:
+The smoke tests keep ABC selected, validate the committed-input regressions `giai` + `r` → `giải` and `cha` + `f` → `chà`, and confirm that a secure field receives seven raw characters without carrying composition state across either focus transition. To exercise the transitional InputMethodKit path separately, run:
 
 ```sh
 platform/macos/scripts/input-source-tool.swift select
@@ -43,6 +44,6 @@ For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC se
 | C16 | Choose “Tắt trong Google Chrome”, type `tieengs`, then re-enable | Literal while excluded; C1 after re-enable |
 | C17 | Record global hot keys, trigger each from Chrome, then clear them | Toggle changes enabled state; switch alternates Telex/VNI; keys do not enter Chrome |
 
-Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Run C13–C17 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, and C14 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
+Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Repeat C12 and run C13–C17 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, and C14 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
 
 Record completed runs in [macOS compatibility results](./macos-compatibility-results.md). Treat unavailable licenses, unfinished first-run setup, or missing release credentials as BLOCKED rather than PASS.
