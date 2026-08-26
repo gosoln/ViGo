@@ -41,3 +41,14 @@ jobs:
       - run: find platform/macos/scripts -name '*.sh' -exec sh -n {} \;
       - run: swift test --package-path platform/macos
       - run: platform/macos/scripts/package-app.sh
+
+  native-windows:
+    name: Windows TSF x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo build -p nakl-core
+      - run: cmake -S platform/windows -B build/windows -A x64 -DBUILD_TESTING=ON
+      - run: cmake --build build/windows --config Debug
+      - run: ctest --test-dir build/windows -C Debug --output-on-failure
+      - run: platform/windows/scripts/verify-build.ps1

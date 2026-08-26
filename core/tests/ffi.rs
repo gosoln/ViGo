@@ -146,3 +146,52 @@ fn c_abi_backspace_updates_session_state_and_passes_through() {
     // SAFETY: the pointer came from `nakl_session_new` and is freed exactly once.
     unsafe { nakl_session_free(session) };
 }
+
+#[test]
+fn c_abi_clone_predicts_without_mutating_the_source_session() {
+    use nakl_core::ffi::{
+        NAKL_ACTION_REPLACE_BEFORE, NAKL_EVENT_TEXT, NAKL_METHOD_TELEX, NAKL_STATUS_OK, NaklAction,
+        nakl_session_clone, nakl_session_free, nakl_session_new, nakl_session_process,
+    };
+
+    let session = nakl_session_new(NAKL_METHOD_TELEX);
+    let mut action = NaklAction::default();
+    for character in "giai".chars() {
+        // SAFETY: the session and writable action storage remain live.
+        assert_eq!(
+            unsafe {
+                nakl_session_process(session, NAKL_EVENT_TEXT, character as u32, &mut action)
+            },
+            NAKL_STATUS_OK
+        );
+    }
+
+    // SAFETY: the source session is live for the clone operation.
+    let preview = unsafe { nakl_session_clone(session) };
+    assert!(!preview.is_null());
+    // SAFETY: the cloned session and writable action storage remain live.
+    assert_eq!(
+        unsafe { nakl_session_process(preview, NAKL_EVENT_TEXT, 'r' as u32, &mut action) },
+        NAKL_STATUS_OK
+    );
+    assert_eq!(action.kind, NAKL_ACTION_REPLACE_BEFORE);
+    assert_eq!(action.delete_scalars, 2);
+    // SAFETY: the replacement remains owned by the clone until its next call.
+    let preview_insert =
+        unsafe { std::slice::from_raw_parts(action.insert_ptr, action.insert_len) };
+    assert_eq!(std::str::from_utf8(preview_insert).unwrap(), "ải");
+    // SAFETY: the clone is released exactly once.
+    unsafe { nakl_session_free(preview) };
+
+    // Processing the source must produce the same action, proving the preview
+    // did not advance source composition state.
+    // SAFETY: the source session and output storage remain live.
+    assert_eq!(
+        unsafe { nakl_session_process(session, NAKL_EVENT_TEXT, 'r' as u32, &mut action) },
+        NAKL_STATUS_OK
+    );
+    assert_eq!(action.kind, NAKL_ACTION_REPLACE_BEFORE);
+    assert_eq!(action.delete_scalars, 2);
+    // SAFETY: the source session is released exactly once.
+    unsafe { nakl_session_free(session) };
+}

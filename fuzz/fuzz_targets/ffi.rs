@@ -5,7 +5,7 @@ use nakl_core::ffi::{
     NAKL_ACTION_PASS_THROUGH, NAKL_ACTION_REPLACE_BEFORE, NAKL_EVENT_BACKSPACE,
     NAKL_EVENT_BOUNDARY, NAKL_EVENT_TEXT, NAKL_METHOD_TELEX, NAKL_METHOD_VNI,
     NAKL_STATUS_INVALID_INPUT, NAKL_STATUS_OK, NaklAction, nakl_config_add_text_expansion,
-    nakl_config_free, nakl_config_new, nakl_session_free, nakl_session_new,
+    nakl_config_free, nakl_config_new, nakl_session_clone, nakl_session_free, nakl_session_new,
     nakl_session_new_with_config, nakl_session_process,
 };
 
@@ -43,6 +43,19 @@ fuzz_target!(|data: &[u8]| {
     unsafe { nakl_config_free(config) };
     if session.is_null() {
         return;
+    }
+
+    // Exercise preview ownership independently from the live session. A clone
+    // must remain safe to process and release at any point in the event stream.
+    // SAFETY: session is live and clone only borrows it for this call.
+    let preview = unsafe { nakl_session_clone(session) };
+    if !preview.is_null() {
+        let mut action = NaklAction::default();
+        // SAFETY: preview and action are live for the duration of this call.
+        let status = unsafe { nakl_session_process(preview, NAKL_EVENT_BOUNDARY, 0, &mut action) };
+        assert_eq!(status, NAKL_STATUS_OK);
+        // SAFETY: preview came from clone and is released exactly once.
+        unsafe { nakl_session_free(preview) };
     }
 
     for chunk in data.chunks(5) {

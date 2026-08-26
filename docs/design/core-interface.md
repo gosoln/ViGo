@@ -14,6 +14,7 @@ Rust callers and tests use this Interface directly. Native platform Adapters use
 
 - Create one `CompositionSession` for each operating-system text context; state is never process-global.
 - Capture immutable settings with `CompositionSession::with_config`; later configuration changes create or refresh a session instead of mutating one during processing.
+- Native adapters may clone a session to predict an operating-system test-key result. A clone owns independent composition state; preview processing must never advance the live session, and only the offered key event is processed on the live session.
 - `InputEvent` represents semantic text or a composition boundary, not a macOS, Windows, or Linux key code.
 - A backspace event removes one Unicode scalar from session state and returns Pass-through Input so the native client performs the visible deletion.
 - `Action::PassThrough` leaves the event unchanged.

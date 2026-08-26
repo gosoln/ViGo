@@ -264,7 +264,7 @@ fn modifier_for(method: TypingMethod, character: char) -> Option<Modifier> {
 }
 
 /// Vietnamese composition state belonging to exactly one text context.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CompositionSession {
     method: TypingMethod,
     config: SessionConfig,

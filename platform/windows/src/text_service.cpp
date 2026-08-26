@@ -1,0 +1,427 @@
+#include "text_service.h"
+
+#include "com_ptr.h"
+#include "edit_session.h"
+#include "module_state.h"
+
+#include <array>
+#include <iterator>
+#include <new>
+
+namespace nakl::windows
+{
+namespace
+{
+
+enum class NormalizedKind
+{
+    Text,
+    Backspace,
+    Boundary,
+};
+
+struct NormalizedKey
+{
+    NormalizedKind kind = NormalizedKind::Boundary;
+    char32_t scalar = U'\0';
+};
+
+[[nodiscard]] bool IsPressed(const std::array<BYTE, 256> &state, int key)
+{
+    return (state[static_cast<std::size_t>(key)] & 0x80) != 0;
+}
+
+[[nodiscard]] NormalizedKey NormalizeKey(WPARAM w_param, LPARAM l_param)
+{
+    if (w_param == VK_BACK)
+    {
+        return {.kind = NormalizedKind::Backspace};
+    }
+
+    std::array<BYTE, 256> keyboard_state{};
+    if (GetKeyboardState(keyboard_state.data()) == FALSE)
+    {
+        return {};
+    }
+    if (w_param < keyboard_state.size())
+    {
+        keyboard_state[static_cast<std::size_t>(w_param)] |= 0x80;
+    }
+    if (IsPressed(keyboard_state, VK_CONTROL) || IsPressed(keyboard_state, VK_MENU) ||
+        IsPressed(keyboard_state, VK_LWIN) || IsPressed(keyboard_state, VK_RWIN))
+    {
+        return {};
+    }
+
+    const UINT scan_code = static_cast<UINT>((l_param >> 16) & 0xFF);
+    wchar_t characters[4]{};
+    const int count =
+        ToUnicodeEx(static_cast<UINT>(w_param), scan_code, keyboard_state.data(), characters,
+                    static_cast<int>(std::size(characters)), 0, GetKeyboardLayout(0));
+    if (count == 1)
+    {
+        const char32_t scalar = static_cast<char32_t>(characters[0]);
+        if (scalar >= U' ' && scalar != 0x7F)
+        {
+            return {.kind = NormalizedKind::Text, .scalar = scalar};
+        }
+        return {};
+    }
+    if (count == 2 && characters[0] >= 0xD800 && characters[0] <= 0xDBFF &&
+        characters[1] >= 0xDC00 && characters[1] <= 0xDFFF)
+    {
+        const char32_t scalar = 0x10000 + ((static_cast<char32_t>(characters[0]) - 0xD800) << 10) +
+                                (static_cast<char32_t>(characters[1]) - 0xDC00);
+        return {.kind = NormalizedKind::Text, .scalar = scalar};
+    }
+    return {};
+}
+
+[[nodiscard]] InputEvent CoreEvent(NormalizedKey key)
+{
+    switch (key.kind)
+    {
+    case NormalizedKind::Text:
+        return {.kind = EventKind::Text, .scalar = key.scalar};
+    case NormalizedKind::Backspace:
+        return {.kind = EventKind::Backspace};
+    case NormalizedKind::Boundary:
+        return {.kind = EventKind::Boundary};
+    }
+    return {.kind = EventKind::Boundary};
+}
+
+} // namespace
+
+TextService::TextService() noexcept
+    : session_(new (std::nothrow) CompositionSession(TypingMethod::Telex))
+{
+    AddModuleObject();
+}
+
+TextService::~TextService()
+{
+    Deactivate();
+    RemoveModuleObject();
+}
+
+HRESULT TextService::CreateInstance(REFIID interface_id, void **object)
+{
+    if (object == nullptr)
+    {
+        return E_POINTER;
+    }
+    *object = nullptr;
+    auto *service = new (std::nothrow) TextService();
+    if (service == nullptr || service->session_ == nullptr || !service->session_->valid())
+    {
+        delete service;
+        return E_OUTOFMEMORY;
+    }
+    const HRESULT result = service->QueryInterface(interface_id, object);
+    service->Release();
+    return result;
+}
+
+HRESULT TextService::QueryInterface(REFIID interface_id, void **object)
+{
+    if (object == nullptr)
+    {
+        return E_POINTER;
+    }
+    *object = nullptr;
+    if (interface_id == IID_IUnknown || interface_id == IID_ITfTextInputProcessor ||
+        interface_id == IID_ITfTextInputProcessorEx)
+    {
+        *object = static_cast<ITfTextInputProcessorEx *>(this);
+    }
+    else if (interface_id == IID_ITfKeyEventSink)
+    {
+        *object = static_cast<ITfKeyEventSink *>(this);
+    }
+    else
+    {
+        return E_NOINTERFACE;
+    }
+    AddRef();
+    return S_OK;
+}
+
+ULONG TextService::AddRef()
+{
+    return reference_count_.fetch_add(1, std::memory_order_relaxed) + 1;
+}
+
+ULONG TextService::Release()
+{
+    const ULONG remaining = reference_count_.fetch_sub(1, std::memory_order_acq_rel) - 1;
+    if (remaining == 0)
+    {
+        delete this;
+    }
+    return remaining;
+}
+
+HRESULT TextService::Activate(ITfThreadMgr *thread_manager, TfClientId client_id)
+{
+    return ActivateEx(thread_manager, client_id, 0);
+}
+
+HRESULT TextService::ActivateEx(ITfThreadMgr *thread_manager, TfClientId client_id, DWORD flags)
+{
+    static_cast<void>(flags);
+    if (thread_manager == nullptr || thread_manager_ != nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    ComPtr<ITfKeystrokeMgr> keystroke_manager;
+    HRESULT result = thread_manager->QueryInterface(
+        IID_ITfKeystrokeMgr, reinterpret_cast<void **>(keystroke_manager.Put()));
+    if (FAILED(result))
+    {
+        return result;
+    }
+    result = keystroke_manager->AdviseKeyEventSink(client_id, this, TRUE);
+    if (FAILED(result))
+    {
+        return result;
+    }
+
+    thread_manager_ = thread_manager;
+    thread_manager_->AddRef();
+    client_id_ = client_id;
+    if (!ResetContext())
+    {
+        Deactivate();
+        return E_OUTOFMEMORY;
+    }
+    return S_OK;
+}
+
+HRESULT TextService::Deactivate()
+{
+    if (thread_manager_ == nullptr)
+    {
+        return S_OK;
+    }
+    ComPtr<ITfKeystrokeMgr> keystroke_manager;
+    if (SUCCEEDED(thread_manager_->QueryInterface(
+            IID_ITfKeystrokeMgr, reinterpret_cast<void **>(keystroke_manager.Put()))))
+    {
+        keystroke_manager->UnadviseKeyEventSink(client_id_);
+    }
+    ClearContext();
+    thread_manager_->Release();
+    thread_manager_ = nullptr;
+    client_id_ = TF_CLIENTID_NULL;
+    return S_OK;
+}
+
+HRESULT TextService::OnSetFocus(BOOL foreground)
+{
+    if (foreground == FALSE)
+    {
+        static_cast<void>(ResetContext());
+    }
+    return S_OK;
+}
+
+HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_param, BOOL *eaten)
+{
+    if (eaten == nullptr)
+    {
+        return E_POINTER;
+    }
+    *eaten = FALSE;
+    if (context == nullptr || IsSecureMode())
+    {
+        static_cast<void>(ResetContext());
+        return S_OK;
+    }
+    HRESULT result = EnsureContext(context);
+    if (FAILED(result))
+    {
+        return result;
+    }
+
+    const NormalizedKey key = NormalizeKey(w_param, l_param);
+    if (key.kind != NormalizedKind::Text)
+    {
+        return S_OK;
+    }
+    std::optional<EditAction> action;
+    try
+    {
+        action = session_->Preview(CoreEvent(key));
+    }
+    catch (const std::bad_alloc &)
+    {
+        static_cast<void>(ResetContext());
+        return E_OUTOFMEMORY;
+    }
+    catch (...)
+    {
+        static_cast<void>(ResetContext());
+        return E_UNEXPECTED;
+    }
+    if (!action.has_value())
+    {
+        static_cast<void>(ResetContext());
+        return S_OK;
+    }
+    *eaten = action->kind == EditAction::Kind::ReplaceBefore ? TRUE : FALSE;
+    return S_OK;
+}
+
+HRESULT TextService::OnTestKeyUp(ITfContext *context, WPARAM w_param, LPARAM l_param, BOOL *eaten)
+{
+    static_cast<void>(context);
+    static_cast<void>(w_param);
+    static_cast<void>(l_param);
+    if (eaten == nullptr)
+    {
+        return E_POINTER;
+    }
+    *eaten = FALSE;
+    return S_OK;
+}
+
+HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_param, BOOL *eaten)
+{
+    if (eaten == nullptr)
+    {
+        return E_POINTER;
+    }
+    *eaten = FALSE;
+    if (context == nullptr || IsSecureMode())
+    {
+        static_cast<void>(ResetContext());
+        return S_OK;
+    }
+    HRESULT result = EnsureContext(context);
+    if (FAILED(result))
+    {
+        return result;
+    }
+
+    const NormalizedKey key = NormalizeKey(w_param, l_param);
+    if (key.kind == NormalizedKind::Boundary)
+    {
+        session_->Reset();
+        return S_OK;
+    }
+    std::optional<EditAction> action;
+    try
+    {
+        action = session_->Process(CoreEvent(key));
+    }
+    catch (const std::bad_alloc &)
+    {
+        static_cast<void>(ResetContext());
+        return E_OUTOFMEMORY;
+    }
+    catch (...)
+    {
+        static_cast<void>(ResetContext());
+        return E_UNEXPECTED;
+    }
+    if (!action.has_value())
+    {
+        static_cast<void>(ResetContext());
+        return S_OK;
+    }
+    if (action->kind == EditAction::Kind::PassThrough)
+    {
+        return S_OK;
+    }
+
+    result = ApplyEditAction(context, client_id_, *action);
+    if (SUCCEEDED(result))
+    {
+        *eaten = TRUE;
+    }
+    else
+    {
+        static_cast<void>(ResetContext());
+    }
+    return S_OK;
+}
+
+HRESULT TextService::OnKeyUp(ITfContext *context, WPARAM w_param, LPARAM l_param, BOOL *eaten)
+{
+    return OnTestKeyUp(context, w_param, l_param, eaten);
+}
+
+HRESULT TextService::OnPreservedKey(ITfContext *context, REFGUID guid, BOOL *eaten)
+{
+    static_cast<void>(context);
+    static_cast<void>(guid);
+    if (eaten == nullptr)
+    {
+        return E_POINTER;
+    }
+    *eaten = FALSE;
+    return S_OK;
+}
+
+bool TextService::IsSecureMode() const
+{
+    if (thread_manager_ == nullptr)
+    {
+        return true;
+    }
+    ComPtr<ITfThreadMgrEx> extended_manager;
+    if (FAILED(thread_manager_->QueryInterface(IID_ITfThreadMgrEx,
+                                               reinterpret_cast<void **>(extended_manager.Put()))))
+    {
+        return true;
+    }
+    DWORD flags = 0;
+    return FAILED(extended_manager->GetActiveFlags(&flags)) || (flags & TF_TMF_SECUREMODE) != 0;
+}
+
+HRESULT TextService::EnsureContext(ITfContext *context)
+{
+    ComPtr<IUnknown> identity;
+    const HRESULT result =
+        context->QueryInterface(IID_IUnknown, reinterpret_cast<void **>(identity.Put()));
+    if (FAILED(result))
+    {
+        return result;
+    }
+    if (identity.Get() != context_identity_)
+    {
+        if (!ResetContext())
+        {
+            return E_OUTOFMEMORY;
+        }
+        context_identity_ = identity.Get();
+        context_identity_->AddRef();
+    }
+    if (session_ == nullptr || !session_->valid())
+    {
+        return E_OUTOFMEMORY;
+    }
+    return S_OK;
+}
+
+bool TextService::ResetContext() noexcept
+{
+    ClearContext();
+    session_.reset(new (std::nothrow) CompositionSession(TypingMethod::Telex));
+    return session_ != nullptr && session_->valid();
+}
+
+void TextService::ClearContext() noexcept
+{
+    session_.reset();
+    if (context_identity_ == nullptr)
+    {
+        return;
+    }
+    context_identity_->Release();
+    context_identity_ = nullptr;
+}
+
+} // namespace nakl::windows

@@ -26,6 +26,12 @@ int main(void)
     if (session == NULL) {
         return 1;
     }
+    NaklSession *preview = nakl_session_clone(session);
+    if (preview == NULL) {
+        nakl_session_free(session);
+        return 1;
+    }
+    nakl_session_free(preview);
 
     NaklAction action = {0};
     const char input[] = "btw ";

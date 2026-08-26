@@ -61,6 +61,12 @@ NaklSession *nakl_session_new_with_config(
     const NaklConfig *config
 );
 
+/*
+ * Clones composition state for action prediction. The returned session is
+ * independent and must be released exactly once. Returns NULL on failure.
+ */
+NaklSession *nakl_session_clone(const NaklSession *session);
+
 /* Accepts NULL. Every non-NULL session must be released exactly once. */
 void nakl_session_free(NaklSession *session);
 

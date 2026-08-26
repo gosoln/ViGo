@@ -29,4 +29,6 @@ Run `platform/macos/scripts/smoke-secure-input.sh` to exercise the direct-input 
 
 Create an unsigned system-wide installer with `platform/macos/scripts/package-app.sh`, then validate it with `platform/macos/scripts/verify-package-structure.sh build/NAKL.app <package-path>`. This checks the universal payload, deployment target, identifiers, version, install domain, and logout requirement without treating ad-hoc signing as production-ready. A production package additionally requires `NAKL_CODESIGN_IDENTITY`, `NAKL_INSTALLER_IDENTITY`, and a notarytool keychain profile passed as `NAKL_NOTARY_PROFILE`; run `notarize.sh` and `verify-release.sh` before distribution. Disable “launch at login” in NAKL before uninstalling; `uninstall-system.sh` then disables the source, preserves a recovery bundle, and forgets the installer receipt.
 
+Follow the complete [macOS release runbook](../../docs/release/macos-release-runbook.md) when preparing a signed release candidate.
+
 The direct adapter consumes only unmodified text key-downs and emits synchronous committed replacements; command modifiers, navigation, mouse focus changes, excluded apps, and secure input reset composition and pass through. The transitional InputMethodKit source continues to expose its active word as marked text. Production distribution still requires Developer ID signing and notarization.

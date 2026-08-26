@@ -171,6 +171,30 @@ pub unsafe extern "C" fn nakl_session_new_with_config(
     .unwrap_or(ptr::null_mut())
 }
 
+/// Clones a session for side-effect-free action prediction by native adapters.
+///
+/// # Safety
+///
+/// `session` must point to a live session returned by a NAKL session
+/// constructor. The returned session has independent composition state and
+/// must be released exactly once.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn nakl_session_clone(session: *const NaklSession) -> *mut NaklSession {
+    if session.is_null() {
+        return ptr::null_mut();
+    }
+
+    catch_unwind(AssertUnwindSafe(|| {
+        // SAFETY: the live session pointer is guaranteed by the caller contract.
+        let session = unsafe { &*session };
+        Box::into_raw(Box::new(NaklSession {
+            session: session.session.clone(),
+            last_insert: Vec::new(),
+        }))
+    }))
+    .unwrap_or(ptr::null_mut())
+}
+
 /// Releases a session returned by [`nakl_session_new`].
 ///
 /// # Safety
