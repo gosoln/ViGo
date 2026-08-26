@@ -8,6 +8,16 @@
 
     <MediaTemplate EmbedCab="yes" />
 
+    <Property Id="NAKL_TSF_PREVIOUS_DLL" Secure="yes">
+      <RegistrySearch
+        Id="FindPreviousTsfDll"
+        Root="HKLM"
+        Key="Software\Classes\CLSID\{027A6B19-4551-46F7-B8FD-FB09AE4135BA}\InProcServer32"
+        Type="raw"
+        Bitness="always64" />
+    </Property>
+    <Property Id="NAKL_TEST_FAIL_AFTER_REGISTER" Secure="yes" />
+
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="NAKL">
         <Component Id="TsfComponent" Guid="*" Bitness="always64">
@@ -53,6 +63,13 @@
       Impersonate="no"
       Return="ignore" />
     <CustomAction
+      Id="RollbackRestorePreviousTsf"
+      Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]regsvr32.exe&quot; /s &quot;[CustomActionData]&quot;"
+      Execute="rollback"
+      Impersonate="no"
+      Return="ignore" />
+    <CustomAction
       Id="UnregisterTsf"
       Directory="System64Folder"
       ExeCommand="&quot;[System64Folder]regsvr32.exe&quot; /u /s &quot;[#TsfDll]&quot;"
@@ -73,6 +90,19 @@
       Execute="immediate"
       Impersonate="yes"
       Return="ignore" />
+    <CustomAction
+      Id="TestFailAfterRegister"
+      Directory="System64Folder"
+      ExeCommand="&quot;[System64Folder]cmd.exe&quot; /d /c exit 1"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+    <SetProperty
+      Id="RollbackRestorePreviousTsf"
+      Value="[NAKL_TSF_PREVIOUS_DLL]"
+      Before="RollbackRestorePreviousTsf"
+      Sequence="execute"
+      Condition='$TsfComponent=3 AND NAKL_TSF_PREVIOUS_DLL' />
 
     <InstallExecuteSequence>
       <Custom
@@ -88,13 +118,21 @@
         After="InstallFinalize"
         Condition='REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE' />
       <Custom
+        Action="RollbackRestorePreviousTsf"
+        Before="InstallFiles"
+        Condition='$TsfComponent=3 AND NAKL_TSF_PREVIOUS_DLL' />
+      <Custom
         Action="RollbackUnregisterTsf"
         After="InstallFiles"
-        Condition='($TsfComponent=3) AND (?TsfComponent&lt;&gt;3)' />
+        Condition='$TsfComponent=3 AND NOT NAKL_TSF_PREVIOUS_DLL' />
       <Custom
         Action="RegisterTsf"
         After="RollbackUnregisterTsf"
         Condition='$TsfComponent=3' />
+      <Custom
+        Action="TestFailAfterRegister"
+        After="RegisterTsf"
+        Condition='NAKL_TEST_FAIL_AFTER_REGISTER=1' />
     </InstallExecuteSequence>
   </Package>
 </Wix>
