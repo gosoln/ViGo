@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nakl.example/schema/settings-v1.json",
+  "title": "NAKL settings version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "enabled", "typing_method", "text_expansions", "excluded_applications"],
+  "properties": {
+    "version": { "const": 1 },
+    "enabled": { "type": "boolean" },
+    "typing_method": { "enum": ["telex", "vni"] },
+    "text_expansions": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["trigger", "replacement"],
+        "properties": {
+          "trigger": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "replacement": { "type": "string", "maxLength": 4096 }
+        }
+      }
+    },
+    "excluded_applications": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "type": "string", "minLength": 1, "maxLength": 260 }
+    }
+  }
+}

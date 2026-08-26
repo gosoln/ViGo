@@ -56,9 +56,13 @@ struct NormalizedKey
 
     const UINT scan_code = static_cast<UINT>((l_param >> 16) & 0xFF);
     wchar_t characters[4]{};
-    const int count =
-        ToUnicodeEx(static_cast<UINT>(w_param), scan_code, keyboard_state.data(), characters,
-                    static_cast<int>(std::size(characters)), 0, GetKeyboardLayout(0));
+    // Bit 2 keeps ToUnicodeEx from mutating the kernel keyboard buffer. Test-key
+    // and key-down both normalize the same event, so dead-key state must remain
+    // untouched while TSF asks whether the service wants the real callback.
+    constexpr UINT DoNotChangeKeyboardState = 0x4;
+    const int count = ToUnicodeEx(static_cast<UINT>(w_param), scan_code, keyboard_state.data(),
+                                  characters, static_cast<int>(std::size(characters)),
+                                  DoNotChangeKeyboardState, GetKeyboardLayout(0));
     if (count == 1)
     {
         const char32_t scalar = static_cast<char32_t>(characters[0]);
@@ -90,6 +94,50 @@ struct NormalizedKey
         return {.kind = EventKind::Boundary};
     }
     return {.kind = EventKind::Boundary};
+}
+
+[[nodiscard]] bool IsCompartmentEnabled(ITfContext *context, REFGUID compartment_id)
+{
+    if (context == nullptr)
+    {
+        return true;
+    }
+    ComPtr<ITfCompartmentMgr> manager;
+    if (FAILED(context->QueryInterface(IID_ITfCompartmentMgr,
+                                       reinterpret_cast<void **>(manager.Put()))))
+    {
+        return true;
+    }
+    ComPtr<ITfCompartment> compartment;
+    if (FAILED(manager->GetCompartment(compartment_id, compartment.Put())))
+    {
+        return true;
+    }
+
+    VARIANT value;
+    VariantInit(&value);
+    const HRESULT result = compartment->GetValue(&value);
+    if (result == S_FALSE || value.vt == VT_EMPTY)
+    {
+        VariantClear(&value);
+        return false;
+    }
+    if (FAILED(result))
+    {
+        VariantClear(&value);
+        return true;
+    }
+    const bool enabled = (value.vt == VT_I4 && value.lVal != 0) ||
+                         (value.vt == VT_UI4 && value.ulVal != 0) ||
+                         (value.vt == VT_BOOL && value.boolVal != VARIANT_FALSE);
+    VariantClear(&value);
+    return enabled;
+}
+
+[[nodiscard]] bool IsContextDisabled(ITfContext *context)
+{
+    return IsCompartmentEnabled(context, GUID_COMPARTMENT_KEYBOARD_DISABLED) ||
+           IsCompartmentEnabled(context, GUID_COMPARTMENT_EMPTYCONTEXT);
 }
 
 } // namespace
@@ -235,7 +283,7 @@ HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l
         return E_POINTER;
     }
     *eaten = FALSE;
-    if (context == nullptr || IsSecureMode())
+    if (context == nullptr || IsSecureMode() || IsContextDisabled(context))
     {
         ClearContext();
         return S_OK;
@@ -253,6 +301,9 @@ HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l
     const NormalizedKey key = NormalizeKey(w_param, l_param);
     if (key.kind != NormalizedKind::Text)
     {
+        // Request OnKeyDown even for pass-through boundaries so the live
+        // Composition Session cannot leak across cursor movement or Backspace.
+        *eaten = TRUE;
         return S_OK;
     }
     std::optional<EditAction> action;
@@ -275,7 +326,11 @@ HRESULT TextService::OnTestKeyDown(ITfContext *context, WPARAM w_param, LPARAM l
         ClearContext();
         return S_OK;
     }
-    *eaten = action->kind == EditAction::Kind::ReplaceBefore ? TRUE : FALSE;
+    // TSF only delivers OnKeyDown after the test callback expresses interest.
+    // Pass-through letters must therefore also request the callback: OnKeyDown
+    // advances the live session and then returns FALSE so the client inserts
+    // the original key normally.
+    *eaten = TRUE;
     return S_OK;
 }
 
@@ -299,7 +354,7 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
         return E_POINTER;
     }
     *eaten = FALSE;
-    if (context == nullptr || IsSecureMode())
+    if (context == nullptr || IsSecureMode() || IsContextDisabled(context))
     {
         ClearContext();
         return S_OK;
@@ -346,7 +401,7 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
     }
 
     result = ApplyEditAction(context, client_id_, *action);
-    if (SUCCEEDED(result))
+    if (result == S_OK)
     {
         *eaten = TRUE;
     }

@@ -40,6 +40,7 @@ struct EditAction
 
     Kind kind = Kind::PassThrough;
     std::size_t delete_scalars = 0;
+    std::u16string expected_before;
     std::u16string insert;
 };
 

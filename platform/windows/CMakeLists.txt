@@ -82,6 +82,7 @@ if(WIN32)
         advapi32
         msctf
         ole32
+        oleaut32
         user32
         uuid
     )

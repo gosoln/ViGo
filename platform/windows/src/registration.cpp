@@ -20,6 +20,11 @@ namespace
     return status == ERROR_SUCCESS ? S_OK : HRESULT_FROM_WIN32(status);
 }
 
+[[nodiscard]] HRESULT PreserveFirstFailure(HRESULT current, HRESULT candidate)
+{
+    return FAILED(current) ? current : candidate;
+}
+
 [[nodiscard]] std::wstring GuidString(REFGUID guid)
 {
     wchar_t value[40]{};
@@ -76,17 +81,24 @@ namespace
         RegCloseKey(server_key);
     }
     RegCloseKey(class_key);
+    if (FAILED(result))
+    {
+        RegDeleteTreeW(HKEY_CLASSES_ROOT, class_key_path.c_str());
+    }
     return result;
 }
 
-void UnregisterComServer()
+[[nodiscard]] HRESULT UnregisterComServer()
 {
     const std::wstring class_id = GuidString(kTextServiceClsid);
-    if (!class_id.empty())
+    if (class_id.empty())
     {
-        const std::wstring path = L"CLSID\\" + class_id;
-        RegDeleteTreeW(HKEY_CLASSES_ROOT, path.c_str());
+        return E_FAIL;
     }
+    const std::wstring path = L"CLSID\\" + class_id;
+    const LSTATUS status = RegDeleteTreeW(HKEY_CLASSES_ROOT, path.c_str());
+    return status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND ? S_OK
+                                                                            : RegistryStatus(status);
 }
 
 [[nodiscard]] HRESULT RegisterProfile()
@@ -107,16 +119,19 @@ void UnregisterComServer()
         static_cast<ULONG>(module_path.size()), 0, nullptr, 0, TRUE, 0);
 }
 
-void UnregisterProfile()
+[[nodiscard]] HRESULT UnregisterProfile()
 {
     ComPtr<ITfInputProcessorProfileMgr> profile_manager;
-    if (SUCCEEDED(CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr, CLSCTX_INPROC_SERVER,
-                                   IID_ITfInputProcessorProfileMgr,
-                                   reinterpret_cast<void **>(profile_manager.Put()))))
+    const HRESULT result =
+        CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr, CLSCTX_INPROC_SERVER,
+                         IID_ITfInputProcessorProfileMgr,
+                         reinterpret_cast<void **>(profile_manager.Put()));
+    if (FAILED(result))
     {
-        profile_manager->UnregisterProfile(kTextServiceClsid, kVietnameseLanguageId,
-                                           kLanguageProfileGuid, 0);
+        return result;
     }
+    return profile_manager->UnregisterProfile(kTextServiceClsid, kVietnameseLanguageId,
+                                              kLanguageProfileGuid, 0);
 }
 
 // Register only capabilities implemented by this slice. Input-mode and system
@@ -149,19 +164,24 @@ const std::array<GUID, 4> kCategories{
     return S_OK;
 }
 
-void UnregisterCategories()
+[[nodiscard]] HRESULT UnregisterCategories()
 {
     ComPtr<ITfCategoryMgr> category_manager;
-    if (FAILED(CoCreateInstance(CLSID_TF_CategoryMgr, nullptr, CLSCTX_INPROC_SERVER,
-                                IID_ITfCategoryMgr,
-                                reinterpret_cast<void **>(category_manager.Put()))))
+    const HRESULT create_result =
+        CoCreateInstance(CLSID_TF_CategoryMgr, nullptr, CLSCTX_INPROC_SERVER, IID_ITfCategoryMgr,
+                         reinterpret_cast<void **>(category_manager.Put()));
+    if (FAILED(create_result))
     {
-        return;
+        return create_result;
     }
+    HRESULT result = S_OK;
     for (const GUID &category : kCategories)
     {
-        category_manager->UnregisterCategory(kTextServiceClsid, category, kTextServiceClsid);
+        result = PreserveFirstFailure(
+            result,
+            category_manager->UnregisterCategory(kTextServiceClsid, category, kTextServiceClsid));
     }
+    return result;
 }
 
 } // namespace
@@ -176,25 +196,25 @@ HRESULT RegisterTextService()
     result = RegisterProfile();
     if (FAILED(result))
     {
-        UnregisterComServer();
+        static_cast<void>(UnregisterComServer());
         return result;
     }
     result = RegisterCategories();
     if (FAILED(result))
     {
-        UnregisterCategories();
-        UnregisterProfile();
-        UnregisterComServer();
+        static_cast<void>(UnregisterCategories());
+        static_cast<void>(UnregisterProfile());
+        static_cast<void>(UnregisterComServer());
     }
     return result;
 }
 
 HRESULT UnregisterTextService()
 {
-    UnregisterCategories();
-    UnregisterProfile();
-    UnregisterComServer();
-    return S_OK;
+    HRESULT result = UnregisterCategories();
+    result = PreserveFirstFailure(result, UnregisterProfile());
+    result = PreserveFirstFailure(result, UnregisterComServer());
+    return result;
 }
 
 } // namespace nakl::windows

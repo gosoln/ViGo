@@ -161,6 +161,13 @@ class ReplaceEditSession final : public ITfEditSession
             {
                 return E_FAIL;
             }
+            const auto actual_before = view.substr(view.size() - delete_units);
+            if (actual_before != action_.expected_before)
+            {
+                // The caret or document changed after the session observed the
+                // pass-through keys. Never delete unrelated client text.
+                return S_FALSE;
+            }
         }
 
         ComPtr<ITfRange> replacement;

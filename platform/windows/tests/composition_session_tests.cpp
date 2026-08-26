@@ -53,8 +53,16 @@ class FakeEditor
 
     EditAction Type(char32_t scalar)
     {
+        const auto preview = session_.Preview(InputEvent{.kind = EventKind::Text, .scalar = scalar});
+        Expect(preview.has_value(), "test-key must request key-down for pass-through and edits");
         auto action = session_.Process(InputEvent{.kind = EventKind::Text, .scalar = scalar});
         Expect(action.has_value(), "core processing must succeed");
+        Expect(action->kind == preview->kind, "test-key must predict the live action kind");
+        Expect(action->delete_scalars == preview->delete_scalars,
+               "test-key must predict the live deletion count");
+        Expect(action->expected_before == preview->expected_before,
+               "test-key must predict the live suffix guard");
+        Expect(action->insert == preview->insert, "test-key must predict the live insertion");
         if (action->kind == EditAction::Kind::PassThrough)
         {
             AppendScalar(text_, scalar);
@@ -93,7 +101,7 @@ class FakeEditor
 
 void VerifyRegression(TypingMethod method, std::u32string_view prefix, char32_t modifier,
                       std::u16string_view expected, std::size_t expected_delete,
-                      std::u16string_view expected_insert)
+                      std::u16string_view expected_before, std::u16string_view expected_insert)
 {
     FakeEditor editor(method);
     for (char32_t scalar : prefix)
@@ -109,6 +117,7 @@ void VerifyRegression(TypingMethod method, std::u32string_view prefix, char32_t 
     const EditAction action = editor.Type(modifier);
     Expect(action.kind == EditAction::Kind::ReplaceBefore, "modifier must consume");
     Expect(action.delete_scalars == expected_delete, "ordered deletion count must match");
+    Expect(action.expected_before == expected_before, "replacement must carry a suffix guard");
     Expect(action.insert == expected_insert, "ordered insertion must match");
     Expect(editor.text() == expected, "fake editor must reach canonical output");
 }
@@ -117,11 +126,11 @@ void VerifyRegression(TypingMethod method, std::u32string_view prefix, char32_t 
 
 int main()
 {
-    VerifyRegression(TypingMethod::Telex, U"cha", U'f', u"chà", 1, u"à");
-    VerifyRegression(TypingMethod::Telex, U"giai", U'r', u"giải", 2, u"ải");
-    VerifyRegression(TypingMethod::Telex, U"hai", U'r', u"hải", 2, u"ải");
-    VerifyRegression(TypingMethod::Telex, U"hoai", U'r', u"hoải", 2, u"ải");
-    VerifyRegression(TypingMethod::Vni, U"giai", U'3', u"giải", 2, u"ải");
+    VerifyRegression(TypingMethod::Telex, U"cha", U'f', u"chà", 1, u"a", u"à");
+    VerifyRegression(TypingMethod::Telex, U"giai", U'r', u"giải", 2, u"ai", u"ải");
+    VerifyRegression(TypingMethod::Telex, U"hai", U'r', u"hải", 2, u"ai", u"ải");
+    VerifyRegression(TypingMethod::Telex, U"hoai", U'r', u"hoải", 2, u"ai", u"ải");
+    VerifyRegression(TypingMethod::Vni, U"giai", U'3', u"giải", 2, u"ai", u"ải");
 
     FakeEditor reset_editor(TypingMethod::Telex);
     reset_editor.Type(U'a');

@@ -26,6 +26,7 @@
         </Component>
         <Component Id="LicenseComponent" Guid="*" Bitness="always64">
           <File Id="LicenseFile" Source="$(var.RepositoryDir)\LICENSE" Name="LICENSE.txt" KeyPath="yes" />
+          <File Id="NoticeFile" Source="$(var.RepositoryDir)\NOTICE" Name="NOTICE.txt" />
         </Component>
       </Directory>
     </StandardDirectory>
@@ -74,20 +75,26 @@
       Return="ignore" />
 
     <InstallExecuteSequence>
-      <Custom Action="RollbackRegisterTsf" Before="UnregisterTsf" Condition='REMOVE~="ALL"' />
-      <Custom Action="UnregisterTsf" Before="RemoveFiles" Condition='REMOVE~="ALL"' />
+      <Custom
+        Action="RollbackRegisterTsf"
+        Before="UnregisterTsf"
+        Condition='(?TsfComponent=3) AND ($TsfComponent=2)' />
+      <Custom
+        Action="UnregisterTsf"
+        Before="RemoveFiles"
+        Condition='(?TsfComponent=3) AND ($TsfComponent=2)' />
       <Custom
         Action="RemoveCurrentUserStartup"
-        Before="UnregisterTsf"
-        Condition='REMOVE~="ALL"' />
+        After="InstallFinalize"
+        Condition='REMOVE~="ALL" AND NOT UPGRADINGPRODUCTCODE' />
       <Custom
         Action="RollbackUnregisterTsf"
         After="InstallFiles"
-        Condition='NOT (REMOVE~="ALL")' />
+        Condition='($TsfComponent=3) AND (?TsfComponent&lt;&gt;3)' />
       <Custom
         Action="RegisterTsf"
         After="RollbackUnregisterTsf"
-        Condition='NOT (REMOVE~="ALL")' />
+        Condition='($TsfComponent=3) AND (?TsfComponent&lt;&gt;3)' />
     </InstallExecuteSequence>
   </Package>
 </Wix>

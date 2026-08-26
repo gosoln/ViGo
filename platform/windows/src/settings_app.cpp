@@ -180,7 +180,7 @@ void SelectComboValue(HWND combo, std::uint32_t value)
     };
 }
 
-void RegisterConfiguredHotKeys(AppState &state)
+bool RegisterConfiguredHotKeys(AppState &state)
 {
     UnregisterHotKey(state.window, ToggleHotKeyId);
     UnregisterHotKey(state.window, SwitchHotKeyId);
@@ -201,9 +201,10 @@ void RegisterConfiguredHotKeys(AppState &state)
         UnregisterHotKey(state.window, SwitchHotKeyId);
         SetWindowTextW(GetDlgItem(state.window, HotKeyStatus),
                        L"Phím nóng đang xung đột với ứng dụng khác.");
-        return;
+        return false;
     }
     SetWindowTextW(GetDlgItem(state.window, HotKeyStatus), L"Phím nóng đang hoạt động.");
+    return true;
 }
 
 void RefreshExpansionList(AppState &state)
@@ -253,7 +254,7 @@ void RefreshGeneralControls(AppState &state)
     RefreshExcludedList(state);
 }
 
-bool Persist(AppState &state)
+bool Persist(AppState &state, bool refresh_hot_keys = true)
 {
     if (!SaveSettings(state.settings))
     {
@@ -264,7 +265,10 @@ bool Persist(AppState &state)
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
                         reinterpret_cast<LPARAM>(L"Software\\NAKL"), SMTO_ABORTIFHUNG, 100,
                         &ignored);
-    RegisterConfiguredHotKeys(state);
+    if (refresh_hot_keys)
+    {
+        static_cast<void>(RegisterConfiguredHotKeys(state));
+    }
     return true;
 }
 
@@ -378,9 +382,25 @@ void ApplyHotKeySettings(AppState &state)
                     MB_OK | MB_ICONWARNING);
         return;
     }
+    const HotKey previous_toggle = state.settings.toggle_input_hot_key;
+    const HotKey previous_switch = state.settings.switch_method_hot_key;
     state.settings.toggle_input_hot_key = toggle;
     state.settings.switch_method_hot_key = switch_method;
-    Persist(state);
+    if (!RegisterConfiguredHotKeys(state))
+    {
+        state.settings.toggle_input_hot_key = previous_toggle;
+        state.settings.switch_method_hot_key = previous_switch;
+        static_cast<void>(RegisterConfiguredHotKeys(state));
+        RefreshGeneralControls(state);
+        return;
+    }
+    if (!Persist(state, false))
+    {
+        state.settings.toggle_input_hot_key = previous_toggle;
+        state.settings.switch_method_hot_key = previous_switch;
+        static_cast<void>(RegisterConfiguredHotKeys(state));
+        RefreshGeneralControls(state);
+    }
 }
 
 void RemoveSelected(AppState &state, int list_identifier)

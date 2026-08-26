@@ -3,6 +3,7 @@
 #include "nakl_core.h"
 
 #include <new>
+#include <string>
 #include <utility>
 
 namespace nakl::windows
@@ -137,6 +138,34 @@ namespace
     };
 }
 
+void AppendUtf16Scalar(std::u16string &text, char32_t scalar)
+{
+    if (scalar <= 0xFFFF)
+    {
+        text.push_back(static_cast<char16_t>(scalar));
+        return;
+    }
+    scalar -= 0x10000;
+    text.push_back(static_cast<char16_t>(0xD800 + (scalar >> 10)));
+    text.push_back(static_cast<char16_t>(0xDC00 + (scalar & 0x3FF)));
+}
+
+[[nodiscard]] std::u16string TrailingScalars(std::u16string_view text, std::size_t scalar_count)
+{
+    const std::size_t units = Utf16UnitsForTrailingScalars(text, scalar_count);
+    return std::u16string(text.substr(text.size() - units));
+}
+
+void TrimHistory(std::u16string &history)
+{
+    constexpr std::size_t MaxTrackedScalars = 256;
+    const std::size_t retained_units = Utf16UnitsForTrailingScalars(history, MaxTrackedScalars);
+    if (retained_units < history.size())
+    {
+        history.erase(0, history.size() - retained_units);
+    }
+}
+
 } // namespace
 
 struct CompositionSession::Impl
@@ -175,6 +204,7 @@ struct CompositionSession::Impl
     }
 
     NaklSession *handle = nullptr;
+    std::u16string committed_history;
 };
 
 CompositionSession::CompositionSession(TypingMethod method,
@@ -205,6 +235,11 @@ std::optional<EditAction> CompositionSession::Preview(InputEvent event) const
     }
     auto action = ProcessHandle(preview, event);
     nakl_session_free(preview);
+    if (action.has_value() && action->kind == EditAction::Kind::ReplaceBefore)
+    {
+        action->expected_before =
+            TrailingScalars(impl_->committed_history, action->delete_scalars);
+    }
     return action;
 }
 
@@ -214,7 +249,35 @@ std::optional<EditAction> CompositionSession::Process(InputEvent event)
     {
         return std::nullopt;
     }
-    return ProcessHandle(impl_->handle, event);
+    auto action = ProcessHandle(impl_->handle, event);
+    if (!action.has_value())
+    {
+        return std::nullopt;
+    }
+    if (action->kind == EditAction::Kind::ReplaceBefore)
+    {
+        action->expected_before =
+            TrailingScalars(impl_->committed_history, action->delete_scalars);
+        const std::size_t units =
+            Utf16UnitsForTrailingScalars(impl_->committed_history, action->delete_scalars);
+        impl_->committed_history.erase(impl_->committed_history.size() - units);
+        impl_->committed_history.append(action->insert);
+    }
+    else if (event.kind == EventKind::Text)
+    {
+        AppendUtf16Scalar(impl_->committed_history, event.scalar);
+    }
+    else if (event.kind == EventKind::Backspace && !impl_->committed_history.empty())
+    {
+        const std::size_t units = Utf16UnitsForTrailingScalars(impl_->committed_history, 1);
+        impl_->committed_history.erase(impl_->committed_history.size() - units);
+    }
+    else if (event.kind == EventKind::Boundary)
+    {
+        impl_->committed_history.clear();
+    }
+    TrimHistory(impl_->committed_history);
+    return action;
 }
 
 void CompositionSession::Reset() noexcept
