@@ -17,11 +17,14 @@ The build script produces a universal arm64/x86_64 `build/NAKL.app`. It uses ad-
 
 ```sh
 platform/macos/scripts/install-local.sh
-# Log out and back in once.
-platform/macos/scripts/input-source-tool.swift select
 ```
 
-Keep the source bundle closed before upgrading an installed build. `uninstall-local.sh` restores ABC when NAKL is active and moves the bundle to Trash without deleting preferences. The compatibility fixture and required synthetic test cases are documented in [the macOS matrix](../../docs/testing/macos-compatibility.md).
+The installer registers and launches the menu-bar app while keeping ABC selected. Keep ABC as the
+macOS input source for underline-free committed input; do not select the transitional NAKL
+InputMethodKit source for normal typing. Keep the source bundle closed before upgrading an installed
+build. `uninstall-local.sh` restores ABC when NAKL is active and moves the bundle to Trash without
+deleting preferences. The compatibility fixture and required synthetic test cases are documented in
+[the macOS matrix](../../docs/testing/macos-compatibility.md).
 
 After a clean login, select Telex in NAKL and run `platform/macos/scripts/smoke-installed.sh`. It launches the installed bundle, temporarily selects ABC, composes only the synthetic sequence `giair chaf` in an unsaved TextEdit document, checks for `giải chà`, closes the document without saving, and restores the previously selected input source. This covers committed tone relocation and replacement without relying on marked text.
 

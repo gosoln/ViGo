@@ -74,7 +74,8 @@ if ! mv "$STAGED_APP" "$INSTALLED_APP"; then
     exit 1
 fi
 if ! codesign --verify --deep --strict "$INSTALLED_APP" || \
-    ! "$SCRIPT_DIR/input-source-tool.swift" register "$INSTALLED_APP"; then
+    ! "$SCRIPT_DIR/input-source-tool.swift" register "$INSTALLED_APP" || \
+    ! "$SCRIPT_DIR/input-source-tool.swift" restore-abc >/dev/null; then
     FAILED_DIR="$REPOSITORY_DIR/build/failed-local-installs"
     mkdir -p "$FAILED_DIR"
     FAILED_APP="$FAILED_DIR/NAKL-$(date +%Y%m%d-%H%M%S)-$$.app"
@@ -86,5 +87,7 @@ if ! codesign --verify --deep --strict "$INSTALLED_APP" || \
     exit 1
 fi
 
+/usr/bin/open -g "$INSTALLED_APP"
 echo "Installed $INSTALLED_APP"
-echo "Log out and back in once, then run: $SCRIPT_DIR/input-source-tool.swift select"
+echo "NAKL started in committed-input mode with ABC selected."
+echo "Keep ABC selected; the NAKL InputMethodKit source is only for compatibility testing."

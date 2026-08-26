@@ -5,7 +5,6 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PACKAGE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 INSTALLED_APP="$HOME/Library/Input Methods/NAKL.app"
 INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/NAKL"
-ORIGINAL_SOURCE=$("$SCRIPT_DIR/input-source-tool.swift" current)
 FIXTURE_PID=""
 
 cleanup() {
@@ -13,8 +12,8 @@ cleanup() {
         kill "$FIXTURE_PID"
         wait "$FIXTURE_PID" 2>/dev/null || true
     fi
-    if ! "$SCRIPT_DIR/input-source-tool.swift" select "$ORIGINAL_SOURCE" >/dev/null 2>&1; then
-        echo "Warning: could not restore input source $ORIGINAL_SOURCE" >&2
+    if ! "$SCRIPT_DIR/input-source-tool.swift" restore-abc >/dev/null 2>&1; then
+        echo "Warning: could not restore ABC committed-input mode" >&2
     fi
 }
 trap cleanup EXIT HUP INT TERM

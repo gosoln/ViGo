@@ -5,14 +5,13 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 INSTALLED_APP="$HOME/Library/Input Methods/NAKL.app"
 INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/NAKL"
 EXPECTED_BUNDLE_ID="com.nakl.inputmethod.NAKL"
-ORIGINAL_SOURCE=$("$SCRIPT_DIR/input-source-tool.swift" current)
 
-restore_source() {
-    if ! "$SCRIPT_DIR/input-source-tool.swift" select "$ORIGINAL_SOURCE" >/dev/null 2>&1; then
-        echo "Warning: could not restore input source $ORIGINAL_SOURCE" >&2
+restore_committed_source() {
+    if ! "$SCRIPT_DIR/input-source-tool.swift" restore-abc >/dev/null 2>&1; then
+        echo "Warning: could not restore ABC committed-input mode" >&2
     fi
 }
-trap restore_source EXIT HUP INT TERM
+trap restore_committed_source EXIT HUP INT TERM
 
 if [ ! -d "$INSTALLED_APP" ]; then
     echo "Install NAKL locally before running the smoke test." >&2
@@ -54,7 +53,12 @@ fi
 
 "$SCRIPT_DIR/input-source-tool.swift" restore-abc >/dev/null
 RESULT=$(osascript <<'APPLESCRIPT'
-tell application "TextEdit" to set testDocument to make new document
+tell application "TextEdit"
+  set testDocument to make new document
+  set testWindow to first window whose name is name of testDocument
+  set index of testWindow to 1
+  activate
+end tell
 try
   tell application "System Events" to tell process "TextEdit"
     set frontmost to true

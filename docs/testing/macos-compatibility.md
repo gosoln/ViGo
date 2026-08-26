@@ -11,14 +11,14 @@ platform/macos/scripts/smoke-installed.sh
 platform/macos/scripts/smoke-secure-input.sh
 ```
 
-The smoke tests keep ABC selected, validate the committed-input regressions `giai` + `r` → `giải` and `cha` + `f` → `chà`, and confirm that a secure field receives seven raw characters without carrying composition state across either focus transition. To exercise the transitional InputMethodKit path separately, run:
+The smoke tests keep ABC selected, validate the committed-input regressions `giai` + `r` → `giải` and `cha` + `f` → `chà`, and confirm that a secure field receives seven raw characters without carrying composition state across either focus transition. To exercise the transitional InputMethodKit path separately, run the following commands. This test path uses marked text and can display an underline; it is not the normal product typing mode.
 
 ```sh
 platform/macos/scripts/input-source-tool.swift select
 swift run --package-path platform/macos NAKLCompatibilityFixture
 ```
 
-Restore ABC after testing with `platform/macos/scripts/input-source-tool.swift restore-abc`.
+Restore ABC immediately after testing with `platform/macos/scripts/input-source-tool.swift restore-abc`.
 
 For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC selected, and run the shared cases in [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md). Do not select the NAKL InputMethodKit source for those cases.
 
@@ -46,7 +46,8 @@ For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC se
 | C18 | With ABC selected, Telex `v e r r s i o n` | `version`; after the second `r`, later tone keys stay literal until the word ends |
 | C19 | With another app in front, choose “Tùy chọn…” from the NAKL menu | The settings window opens and becomes visible in front of the current app |
 | C20 | Switch Finder → Chrome → TextEdit, opening the NAKL menu after each switch | The exclusion action names the current app every time; it never retains the previous app |
+| C21 | Complete a local install or upgrade, then inspect the current macOS input source | ABC remains selected and NAKL runs from the menu bar; normal typing has no marked-text underline |
 
-Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Repeat C12 and run C13–C20 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, C14, C18, C19, and C20 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
+Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Repeat C12 and run C13–C21 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, C14, C18, C19, and C20 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
 
 Record completed runs in [macOS compatibility results](./macos-compatibility-results.md). Treat unavailable licenses, unfinished first-run setup, or missing release credentials as BLOCKED rather than PASS.
