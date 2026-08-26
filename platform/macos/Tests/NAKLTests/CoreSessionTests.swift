@@ -168,6 +168,28 @@ func excludedApplicationPolicyBypassesConfiguredIdentifiers() {
   #expect(policy.shouldProcess(bundleIdentifier: nil))
 }
 
+@Test("Hot key policy maps configured combinations to actions")
+func hotKeyPolicyMapsConfiguredCombinationsToActions() throws {
+  let toggle = try #require(
+    KeyboardShortcut(keyCode: 49, modifierFlags: [.control, .option])
+  )
+  let switchMethod = try #require(
+    KeyboardShortcut(keyCode: 17, modifierFlags: [.control, .option])
+  )
+  let policy = DirectInputHotKeyPolicy(
+    toggleInput: toggle,
+    switchMethod: switchMethod
+  )
+
+  #expect(
+    policy.action(keyCode: 49, modifierFlags: [.control, .option]) == .toggleInput
+  )
+  #expect(
+    policy.action(keyCode: 17, modifierFlags: [.control, .option]) == .switchMethod
+  )
+  #expect(policy.action(keyCode: 0, modifierFlags: [.command]) == nil)
+}
+
 @Test("Direct typing commits text expansion on space")
 func directTypingCommitsTextExpansionOnSpace() throws {
   let engine = try #require(

@@ -68,3 +68,26 @@ func excludedApplicationsPersistAndCanBeRemoved() throws {
   restored.removeExcludedApplication(bundleIdentifier: application.bundleIdentifier)
   #expect(restored.excludedApplications.isEmpty)
 }
+
+@Test("Hot keys require modifiers, persist, and remain unique")
+@MainActor
+func hotKeysRequireModifiersPersistAndRemainUnique() throws {
+  let suiteName = "HotKeyTests.\(UUID().uuidString)"
+  let defaults = try #require(UserDefaults(suiteName: suiteName))
+  defer { defaults.removePersistentDomain(forName: suiteName) }
+
+  #expect(KeyboardShortcut(keyCode: 0, modifierFlags: .shift) == nil)
+  let shortcut = try #require(
+    KeyboardShortcut(keyCode: 49, modifierFlags: [.control, .option])
+  )
+  let first = SettingsStore(defaults: defaults)
+  first.setShortcut(shortcut, for: .toggleInput)
+
+  let restored = SettingsStore(defaults: defaults)
+  #expect(restored.toggleInputShortcut == shortcut)
+  #expect(shortcut.displayName == "⌃⌥Space")
+
+  restored.setShortcut(shortcut, for: .switchMethod)
+  #expect(restored.toggleInputShortcut == nil)
+  #expect(restored.switchMethodShortcut == shortcut)
+}

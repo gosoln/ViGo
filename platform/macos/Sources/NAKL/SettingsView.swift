@@ -64,6 +64,27 @@ private struct GeneralSettingsView: View {
 
       Section {
         HStack {
+          Text("Bật/Tắt gõ tiếng Việt")
+          Spacer()
+          ShortcutRecorderButton(shortcut: settings.toggleInputShortcut) {
+            settings.setShortcut($0, for: .toggleInput)
+          }
+        }
+        HStack {
+          Text("Đổi kiểu gõ")
+          Spacer()
+          ShortcutRecorderButton(shortcut: settings.switchMethodShortcut) {
+            settings.setShortcut($0, for: .switchMethod)
+          }
+        }
+      } header: {
+        Text("Phím nóng")
+      } footer: {
+        Text("Nhấn Esc để hủy; bấm chuột phải vào phím nóng để xóa.")
+      }
+
+      Section {
+        HStack {
           Label("Accessibility", systemImage: "hand.raised")
           Spacer()
           if accessibility.isGranted {

@@ -36,7 +36,8 @@ For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC se
 | C14 | With ABC selected, Telex `cha`, then `f` | `chà`; never `chaà` |
 | C15 | Type C13 in the Chrome address bar | No marked-text underline; suggestions remain visible |
 | C16 | Choose “Tắt trong Google Chrome”, type `tieengs`, then re-enable | Literal while excluded; C1 after re-enable |
+| C17 | Record global hot keys, trigger each from Chrome, then clear them | Toggle changes enabled state; switch alternates Telex/VNI; keys do not enter Chrome |
 
-Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Run C13–C16 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, and C14 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
+Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Run C13–C17 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, and C14 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
 
 Record completed runs in [macOS compatibility results](./macos-compatibility-results.md). Treat unavailable licenses, unfinished first-run setup, or missing release credentials as BLOCKED rather than PASS.

@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
   private let accessibility = AccessibilityAuthorization.shared
+  private let settings = SettingsStore.shared
   private var directInputTap: DirectInputTap?
   private var inputMethodServer: IMKServer?
   private var runtimeStatusPollTimer: Timer?
@@ -21,7 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       bundleIdentifier: bundleIdentifier
     )
 
-    let directInputTap = DirectInputTap()
+    let directInputTap = DirectInputTap { [weak settings] action in
+      Task { @MainActor in
+        settings?.perform(action)
+      }
+    }
     self.directInputTap = directInputTap
     accessibility.refresh()
     if !accessibility.isGranted {
@@ -61,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct NAKLApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var accessibility = AccessibilityAuthorization.shared
-  @StateObject private var settings = SettingsStore()
+  @StateObject private var settings = SettingsStore.shared
 
   var body: some Scene {
     MenuBarExtra(

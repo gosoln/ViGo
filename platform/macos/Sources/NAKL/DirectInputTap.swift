@@ -29,19 +29,41 @@ struct DirectInputApplicationPolicy {
   }
 }
 
+struct DirectInputHotKeyPolicy {
+  let toggleInput: KeyboardShortcut?
+  let switchMethod: KeyboardShortcut?
+
+  func action(
+    keyCode: UInt16,
+    modifierFlags: NSEvent.ModifierFlags
+  ) -> HotKeyAction? {
+    if toggleInput?.matches(keyCode: keyCode, modifierFlags: modifierFlags) == true {
+      return .toggleInput
+    }
+    if switchMethod?.matches(keyCode: keyCode, modifierFlags: modifierFlags) == true {
+      return .switchMethod
+    }
+    return nil
+  }
+}
+
 final class DirectInputTap {
   private var activeApplicationPID: pid_t?
   private var applicationPolicy = DirectInputApplicationPolicy(excludedBundleIdentifiers: [])
   private var configuration = CoreConfigurationSnapshot()
   private var engine: DirectTypingEngine?
   private var eventTap: CFMachPort?
+  private let handleHotKey: (HotKeyAction) -> Void
+  private var hotKeyPolicy = DirectInputHotKeyPolicy(toggleInput: nil, switchMethod: nil)
   private var runLoopSource: CFRunLoopSource?
   private var securityPolicy = DirectInputSecurityPolicy()
   private var secureInputPollTimer: Timer?
 
-  init() {
+  init(handleHotKey: @escaping (HotKeyAction) -> Void = { _ in }) {
+    self.handleHotKey = handleHotKey
     engine = DirectTypingEngine(configuration: configuration)
     refreshApplicationPolicy()
+    refreshHotKeyPolicy()
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(settingsDidChange),
@@ -137,17 +159,29 @@ final class DirectInputTap {
       activeApplicationPID = currentPID
       resetSession()
     }
+
+    let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+    let modifierFlags = NSEvent.ModifierFlags(rawValue: UInt(event.flags.rawValue))
+    if activeApplication?.bundleIdentifier != Bundle.main.bundleIdentifier,
+      let action = hotKeyPolicy.action(
+        keyCode: keyCode,
+        modifierFlags: modifierFlags
+      )
+    {
+      resetSession()
+      handleHotKey(action)
+      return nil
+    }
     guard applicationPolicy.shouldProcess(bundleIdentifier: activeApplication?.bundleIdentifier)
     else {
       resetSession()
       return Unmanaged.passUnretained(event)
     }
 
-    let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
     let characters = unicodeCharacters(from: event)
     let normalized = MacKeyEventNormalizer.normalize(
       keyCode: keyCode,
-      modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(event.flags.rawValue)),
+      modifierFlags: modifierFlags,
       characters: characters,
       method: configuration.method
     )
@@ -178,6 +212,7 @@ final class DirectInputTap {
   @objc private func settingsDidChange() {
     configuration = CoreConfigurationSnapshot()
     refreshApplicationPolicy()
+    refreshHotKeyPolicy()
     engine = DirectTypingEngine(configuration: configuration)
   }
 
@@ -205,6 +240,17 @@ final class DirectInputTap {
     }
     applicationPolicy = DirectInputApplicationPolicy(
       excludedBundleIdentifiers: Set(applications.map(\.bundleIdentifier))
+    )
+  }
+
+  private func refreshHotKeyPolicy(defaults: UserDefaults = .standard) {
+    func shortcut(for key: String) -> KeyboardShortcut? {
+      guard let data = defaults.data(forKey: key) else { return nil }
+      return try? JSONDecoder().decode(KeyboardShortcut.self, from: data)
+    }
+    hotKeyPolicy = DirectInputHotKeyPolicy(
+      toggleInput: shortcut(for: SettingsKey.toggleInputShortcut),
+      switchMethod: shortcut(for: SettingsKey.switchMethodShortcut)
     )
   }
 
