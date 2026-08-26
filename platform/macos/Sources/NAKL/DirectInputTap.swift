@@ -1,19 +1,35 @@
 import AppKit
 import ApplicationServices
+import Carbon
 
 private let accessibilityPromptKey = "AXTrustedCheckOptionPrompt"
 
-final class DirectInputTap {
-  private static let committedEditQueue = DispatchQueue(
-    label: "com.nakl.inputmethod.committed-edit"
-  )
-  private static let syntheticEventMarker = CGEventFlags(rawValue: 1 << 29)
+enum DirectInputSecurityDecision: Equatable {
+  case process(resetSession: Bool)
+  case passThrough(resetSession: Bool)
+}
 
+struct DirectInputSecurityPolicy {
+  private var wasSecureInputEnabled = false
+
+  mutating func evaluate(isSecureInputEnabled: Bool) -> DirectInputSecurityDecision {
+    let resetSession = isSecureInputEnabled != wasSecureInputEnabled
+    wasSecureInputEnabled = isSecureInputEnabled
+    if isSecureInputEnabled {
+      return .passThrough(resetSession: resetSession)
+    }
+    return .process(resetSession: resetSession)
+  }
+}
+
+final class DirectInputTap {
   private var activeApplicationPID: pid_t?
   private var configuration = CoreConfigurationSnapshot()
   private var engine: DirectTypingEngine?
   private var eventTap: CFMachPort?
   private var runLoopSource: CFRunLoopSource?
+  private var securityPolicy = DirectInputSecurityPolicy()
+  private var secureInputPollTimer: Timer?
 
   init() {
     engine = DirectTypingEngine(configuration: configuration)
@@ -23,10 +39,17 @@ final class DirectInputTap {
       name: .naklSettingsDidChange,
       object: nil
     )
+    NSWorkspace.shared.notificationCenter.addObserver(
+      self,
+      selector: #selector(activeApplicationDidChange(_:)),
+      name: NSWorkspace.didActivateApplicationNotification,
+      object: nil
+    )
   }
 
   deinit {
     NotificationCenter.default.removeObserver(self)
+    NSWorkspace.shared.notificationCenter.removeObserver(self)
     stop()
   }
 
@@ -62,10 +85,14 @@ final class DirectInputTap {
     runLoopSource = source
     CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
     CGEvent.tapEnable(tap: tap, enable: true)
+    _ = refreshSecureInputState()
+    startSecureInputPolling()
     return true
   }
 
   func stop() {
+    secureInputPollTimer?.invalidate()
+    secureInputPollTimer = nil
     if let eventTap {
       CGEvent.tapEnable(tap: eventTap, enable: false)
     }
@@ -78,6 +105,7 @@ final class DirectInputTap {
   }
 
   fileprivate func handle(
+    proxy: CGEventTapProxy,
     type: CGEventType,
     event: CGEvent
   ) -> Unmanaged<CGEvent>? {
@@ -89,15 +117,14 @@ final class DirectInputTap {
       return Unmanaged.passUnretained(event)
     }
 
-    guard !event.flags.contains(Self.syntheticEventMarker) else {
-      return Unmanaged.passUnretained(event)
-    }
-
     if type == .leftMouseDown || type == .rightMouseDown || type == .otherMouseDown {
       resetSession()
       return Unmanaged.passUnretained(event)
     }
     guard type == .keyDown else { return Unmanaged.passUnretained(event) }
+    guard !refreshSecureInputState() else {
+      return Unmanaged.passUnretained(event)
+    }
 
     let currentPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
     if currentPID != activeApplicationPID {
@@ -116,7 +143,10 @@ final class DirectInputTap {
 
     guard let engine else { return Unmanaged.passUnretained(event) }
     switch normalized {
-    case .boundary, .backspace:
+    case .boundary:
+      resetSession()
+      return Unmanaged.passUnretained(event)
+    case .backspace:
       _ = engine.process(normalized)
       return Unmanaged.passUnretained(event)
     case .text:
@@ -124,7 +154,11 @@ final class DirectInputTap {
       case .passThrough:
         return Unmanaged.passUnretained(event)
       case .replaceCommitted(let deleteScalars, let insert):
-        deferCommittedReplacement(deleteScalars: deleteScalars, insert: insert)
+        postCommittedReplacement(
+          proxy: proxy,
+          deleteScalars: deleteScalars,
+          insert: insert
+        )
         return nil
       }
     }
@@ -135,8 +169,45 @@ final class DirectInputTap {
     engine = DirectTypingEngine(configuration: configuration)
   }
 
+  @objc private func activeApplicationDidChange(_ notification: Notification) {
+    activeApplicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+    resetSession()
+  }
+
+  @objc private func pollSecureInputState(_ timer: Timer) {
+    _ = refreshSecureInputState()
+  }
+
   private func resetSession() {
-    engine = DirectTypingEngine(configuration: configuration)
+    engine?.reset()
+  }
+
+  private func startSecureInputPolling() {
+    secureInputPollTimer?.invalidate()
+    let timer = Timer(
+      timeInterval: 0.25,
+      target: self,
+      selector: #selector(pollSecureInputState(_:)),
+      userInfo: nil,
+      repeats: true
+    )
+    secureInputPollTimer = timer
+    RunLoop.main.add(timer, forMode: .common)
+  }
+
+  @discardableResult
+  private func refreshSecureInputState() -> Bool {
+    let decision = securityPolicy.evaluate(
+      isSecureInputEnabled: IsSecureEventInputEnabled()
+    )
+    switch decision {
+    case .process(let shouldReset):
+      if shouldReset { resetSession() }
+      return false
+    case .passThrough(let shouldReset):
+      if shouldReset { resetSession() }
+      return true
+    }
   }
 
   private func unicodeCharacters(from event: CGEvent) -> String? {
@@ -153,26 +224,19 @@ final class DirectInputTap {
     return String(utf16CodeUnits: units, count: actualLength)
   }
 
-  private func deferCommittedReplacement(
-    deleteScalars: Int,
-    insert: String
-  ) {
-    Self.committedEditQueue.async {
-      Self.postCommittedReplacement(deleteScalars: deleteScalars, insert: insert)
-    }
-  }
-
-  private static func postCommittedReplacement(
+  private func postCommittedReplacement(
+    proxy: CGEventTapProxy,
     deleteScalars: Int,
     insert: String
   ) {
     for _ in 0..<deleteScalars {
-      postKeyPair(keyCode: 51, unicode: nil)
+      postKeyPair(proxy: proxy, keyCode: 51, unicode: nil)
     }
-    postKeyPair(keyCode: 0, unicode: Array(insert.utf16))
+    postKeyPair(proxy: proxy, keyCode: 0, unicode: Array(insert.utf16))
   }
 
-  private static func postKeyPair(
+  private func postKeyPair(
+    proxy: CGEventTapProxy,
     keyCode: CGKeyCode,
     unicode: [UniChar]?
   ) {
@@ -182,7 +246,6 @@ final class DirectInputTap {
     else { return }
 
     for event in [down, up] {
-      event.flags = Self.syntheticEventMarker
       if let unicode {
         unicode.withUnsafeBufferPointer { buffer in
           event.keyboardSetUnicodeString(
@@ -191,7 +254,7 @@ final class DirectInputTap {
           )
         }
       }
-      event.post(tap: .cgSessionEventTap)
+      event.tapPostEvent(proxy)
     }
   }
 }
@@ -210,5 +273,5 @@ private func directInputTapCallback(
 ) -> Unmanaged<CGEvent>? {
   guard let userInfo else { return Unmanaged.passUnretained(event) }
   let inputTap = Unmanaged<DirectInputTap>.fromOpaque(userInfo).takeUnretainedValue()
-  return inputTap.handle(type: type, event: event)
+  return inputTap.handle(proxy: proxy, type: type, event: event)
 }

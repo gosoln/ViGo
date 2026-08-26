@@ -21,4 +21,8 @@ final class DirectTypingEngine {
       .replaceCommitted(deleteScalars: deleteScalars, insert: insert)
     }
   }
+
+  func reset() {
+    _ = session.process(.boundary)
+  }
 }

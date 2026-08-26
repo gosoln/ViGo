@@ -130,6 +130,33 @@ func directTypingReplacesVowelWithoutDuplication() throws {
   #expect(applyDirectInput("chaf", using: engine) == "chà")
 }
 
+@Test("Direct typing reset prevents composition crossing text contexts")
+func directTypingResetPreventsCrossContextComposition() throws {
+  let engine = try #require(
+    DirectTypingEngine(
+      configuration: CoreConfigurationSnapshot(
+        isEnabled: true,
+        method: .telex,
+        expansions: []
+      )
+    )
+  )
+
+  #expect(engine.process(.text("a")) == .passThrough)
+  engine.reset()
+  #expect(engine.process(.text("s")) == .passThrough)
+}
+
+@Test("Secure input passes through and resets on both transitions")
+func secureInputPassesThroughAndResetsOnTransitions() {
+  var policy = DirectInputSecurityPolicy()
+
+  #expect(policy.evaluate(isSecureInputEnabled: false) == .process(resetSession: false))
+  #expect(policy.evaluate(isSecureInputEnabled: true) == .passThrough(resetSession: true))
+  #expect(policy.evaluate(isSecureInputEnabled: true) == .passThrough(resetSession: false))
+  #expect(policy.evaluate(isSecureInputEnabled: false) == .process(resetSession: true))
+}
+
 @Test("Direct typing commits text expansion on space")
 func directTypingCommitsTextExpansionOnSpace() throws {
   let engine = try #require(

@@ -28,6 +28,7 @@ let package = Package(
             name: "NAKL",
             dependencies: ["NAKLCoreBridge"],
             linkerSettings: [
+                .linkedFramework("Carbon"),
                 .linkedFramework("InputMethodKit"),
                 .unsafeFlags([coreLibrary]),
             ]
