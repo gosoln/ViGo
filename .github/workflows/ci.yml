@@ -24,6 +24,8 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - if: matrix.os == 'ubuntu-latest'
+        run: cargo test -p nakl-core --release --test performance -- --ignored --nocapture
 
   native-macos:
     name: C ABI and legacy oracle
@@ -59,3 +61,54 @@ jobs:
           -c Debug
           -p:AcceptEula=${{ vars.WIX_EULA_ACCEPTED }}
           -p:NAKLBuildDir=${{ github.workspace }}/build/windows/Debug
+
+  native-linux-ubuntu:
+    name: Linux IBus and Fcitx5 (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: >-
+          sudo apt-get update && sudo apt-get install -y
+          ninja-build pkg-config libibus-1.0-dev libfcitx5core-dev
+          libfcitx5config-dev libfcitx5utils-dev extra-cmake-modules
+      - run: cargo build -p nakl-core --release
+      - run: >-
+          cmake -S platform/linux -B build/linux -G Ninja
+          -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON
+          -DNAKL_CORE_LIBRARY=${{ github.workspace }}/target/release/libnakl_core.a
+          -DNAKL_BUILD_IBUS=ON -DNAKL_BUILD_FCITX5=ON
+      - run: cmake --build build/linux
+      - run: ctest --test-dir build/linux --output-on-failure
+      - run: cpack --config build/linux/CPackConfig.cmake -G DEB -B dist/linux
+      - run: find dist/linux -name '*.deb' -exec dpkg-deb --info {} \;
+      - run: find dist/linux -name '*.deb' -exec dpkg-deb --contents {} \;
+      - run: sudo apt-get install -y --no-install-recommends ./dist/linux/*.deb
+      - run: dpkg --listfiles nakl-ibus && dpkg --listfiles nakl-fcitx5
+      - run: sudo dpkg --remove nakl-ibus nakl-fcitx5
+      - run: test ! -e /usr/libexec/ibus-engine-nakl && test ! -e /usr/lib/*/fcitx5/nakl.so
+
+  native-linux-fedora:
+    name: Linux IBus and Fcitx5 (Fedora 44)
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - uses: actions/checkout@v7
+      - run: >-
+          dnf install -y gcc-c++ cmake ninja-build pkgconf-pkg-config
+          ibus-devel fcitx5-devel extra-cmake-modules rpm-build rustup
+      - run: rustup toolchain install 1.98.0 --profile minimal && rustup default 1.98.0
+      - run: cargo build -p nakl-core --release
+      - run: >-
+          cmake -S platform/linux -B build/linux-fedora -G Ninja
+          -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON
+          -DNAKL_CORE_LIBRARY=${{ github.workspace }}/target/release/libnakl_core.a
+          -DNAKL_BUILD_IBUS=ON -DNAKL_BUILD_FCITX5=ON
+      - run: cmake --build build/linux-fedora
+      - run: ctest --test-dir build/linux-fedora --output-on-failure
+      - run: cpack --config build/linux-fedora/CPackConfig.cmake -G RPM -B dist/linux
+      - run: find dist/linux -name '*.rpm' -exec rpm -qip {} \;
+      - run: find dist/linux -name '*.rpm' -exec rpm -qlp {} \;
+      - run: dnf install -y --setopt=install_weak_deps=False dist/linux/*.rpm
+      - run: rpm -ql nakl-ibus && rpm -ql nakl-fcitx5
+      - run: rpm -e nakl-ibus nakl-fcitx5
+      - run: test ! -e /usr/libexec/ibus-engine-nakl && test ! -e /usr/lib64/fcitx5/nakl.so

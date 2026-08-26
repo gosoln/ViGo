@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component>
+  <name>org.freedesktop.IBus.NAKL</name>
+  <description>NAKL Vietnamese input method</description>
+  <exec>@CMAKE_INSTALL_FULL_LIBEXECDIR@/ibus-engine-nakl</exec>
+  <version>2.0.0</version>
+  <license>GPL-3.0-or-later</license>
+  <author>NAKL contributors</author>
+  <homepage>https://github.com/huyphan/NAKL</homepage>
+  <textdomain>nakl</textdomain>
+  <engines>
+    <engine>
+      <name>nakl-telex</name>
+      <longname>NAKL Telex</longname>
+      <language>vi</language>
+      <license>GPL-3.0-or-later</license>
+      <author>NAKL contributors</author>
+      <layout>us</layout>
+      <symbol>V</symbol>
+    </engine>
+    <engine>
+      <name>nakl-vni</name>
+      <longname>NAKL VNI</longname>
+      <language>vi</language>
+      <license>GPL-3.0-or-later</license>
+      <author>NAKL contributors</author>
+      <layout>us</layout>
+      <symbol>V</symbol>
+    </engine>
+  </engines>
+</component>
