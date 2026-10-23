@@ -103,7 +103,7 @@ jobs:
       - run: >-
           cmake -S platform/linux -B build/linux-fedora -G Ninja
           -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=ON
-          -DVIGO_CORE_LIBRARY=${{ github.workspace }}/target/release/libvigo_core.a
+          -DVIGO_CORE_LIBRARY=$GITHUB_WORKSPACE/target/release/libvigo_core.a
           -DVIGO_BUILD_IBUS=ON -DVIGO_BUILD_FCITX5=ON
       - run: cmake --build build/linux-fedora
       - run: ctest --test-dir build/linux-fedora --output-on-failure
