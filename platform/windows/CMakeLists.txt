@@ -84,7 +84,6 @@ if(WIN32)
         vigo_windows_composition
         vigo_windows_settings
         advapi32
-        msctf
         ole32
         oleaut32
         user32

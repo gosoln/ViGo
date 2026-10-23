@@ -1,8 +1,10 @@
 #include "settings.h"
 
+// windows.h must precede the other Windows headers; the blank line keeps tools from reordering.
+#include <windows.h>
+
 #include <commctrl.h>
 #include <shellapi.h>
-#include <windows.h>
 #include <windowsx.h>
 
 #include <algorithm>
