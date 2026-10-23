@@ -4,14 +4,14 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PACKAGE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 REPOSITORY_DIR=$(CDPATH= cd -- "$PACKAGE_DIR/../.." && pwd)
-APP_DIR="$REPOSITORY_DIR/build/NAKL.app"
-ARM64_CORE="$REPOSITORY_DIR/target/aarch64-apple-darwin/release/libnakl_core.a"
-X86_64_CORE="$REPOSITORY_DIR/target/x86_64-apple-darwin/release/libnakl_core.a"
+APP_DIR="$REPOSITORY_DIR/build/ViGo.app"
+ARM64_CORE="$REPOSITORY_DIR/target/aarch64-apple-darwin/release/libvigo_core.a"
+X86_64_CORE="$REPOSITORY_DIR/target/x86_64-apple-darwin/release/libvigo_core.a"
 ARM64_SCRATCH="$REPOSITORY_DIR/build/swift-arm64"
 X86_64_SCRATCH="$REPOSITORY_DIR/build/swift-x86_64"
 mkdir -p "$REPOSITORY_DIR/build"
-STAGING_DIR=$(mktemp -d "$REPOSITORY_DIR/build/.nakl-app.XXXXXX")
-STAGED_APP="$STAGING_DIR/NAKL.app"
+STAGING_DIR=$(mktemp -d "$REPOSITORY_DIR/build/.vigo-app.XXXXXX")
+STAGED_APP="$STAGING_DIR/ViGo.app"
 
 cleanup() {
     rm -rf "$STAGING_DIR"
@@ -27,44 +27,44 @@ done
 
 MACOSX_DEPLOYMENT_TARGET=13.0 cargo build \
     --manifest-path "$REPOSITORY_DIR/Cargo.toml" \
-    -p nakl-core --release --target aarch64-apple-darwin
+    -p vigo-core --release --target aarch64-apple-darwin
 MACOSX_DEPLOYMENT_TARGET=13.0 cargo build \
     --manifest-path "$REPOSITORY_DIR/Cargo.toml" \
-    -p nakl-core --release --target x86_64-apple-darwin
+    -p vigo-core --release --target x86_64-apple-darwin
 
-ARM64_BIN=$(NAKL_CORE_LIBRARY="$ARM64_CORE" swift build \
+ARM64_BIN=$(VIGO_CORE_LIBRARY="$ARM64_CORE" swift build \
     --package-path "$PACKAGE_DIR" --scratch-path "$ARM64_SCRATCH" \
     --triple arm64-apple-macosx13.0 -c release --show-bin-path)
-X86_64_BIN=$(NAKL_CORE_LIBRARY="$X86_64_CORE" swift build \
+X86_64_BIN=$(VIGO_CORE_LIBRARY="$X86_64_CORE" swift build \
     --package-path "$PACKAGE_DIR" --scratch-path "$X86_64_SCRATCH" \
     --triple x86_64-apple-macosx13.0 -c release --show-bin-path)
 
 # SwiftPM does not track the Rust archive passed through unsafe linker flags.
-# Remove only the final products so a changed core is always linked into NAKL.
-rm -f "$ARM64_BIN/NAKL" "$X86_64_BIN/NAKL"
+# Remove only the final products so a changed core is always linked into ViGo.
+rm -f "$ARM64_BIN/ViGo" "$X86_64_BIN/ViGo"
 
-NAKL_CORE_LIBRARY="$ARM64_CORE" swift build \
+VIGO_CORE_LIBRARY="$ARM64_CORE" swift build \
     --package-path "$PACKAGE_DIR" --scratch-path "$ARM64_SCRATCH" \
     --triple arm64-apple-macosx13.0 -c release
-NAKL_CORE_LIBRARY="$X86_64_CORE" swift build \
+VIGO_CORE_LIBRARY="$X86_64_CORE" swift build \
     --package-path "$PACKAGE_DIR" --scratch-path "$X86_64_SCRATCH" \
     --triple x86_64-apple-macosx13.0 -c release
 
 mkdir -p "$STAGED_APP/Contents/MacOS" "$STAGED_APP/Contents/Resources"
-lipo -create "$ARM64_BIN/NAKL" "$X86_64_BIN/NAKL" \
-    -output "$STAGED_APP/Contents/MacOS/NAKL"
+lipo -create "$ARM64_BIN/ViGo" "$X86_64_BIN/ViGo" \
+    -output "$STAGED_APP/Contents/MacOS/ViGo"
 cp "$PACKAGE_DIR/Resources/Info.plist" "$STAGED_APP/Contents/Info.plist"
 cp -X "$REPOSITORY_DIR/LICENSE" "$STAGED_APP/Contents/Resources/LICENSE"
 
-BUILD_NUMBER=${NAKL_BUILD_NUMBER:-$(git -C "$REPOSITORY_DIR" rev-list --count HEAD)}
+BUILD_NUMBER=${VIGO_BUILD_NUMBER:-$(git -C "$REPOSITORY_DIR" rev-list --count HEAD)}
 case "$BUILD_NUMBER" in
-    ''|*[!0-9]*) echo "NAKL_BUILD_NUMBER must contain only decimal digits." >&2; exit 1 ;;
+    ''|*[!0-9]*) echo "VIGO_BUILD_NUMBER must contain only decimal digits." >&2; exit 1 ;;
 esac
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" \
     "$STAGED_APP/Contents/Info.plist"
 xattr -cr "$STAGED_APP"
 
-SIGNING_IDENTITY=${NAKL_CODESIGN_IDENTITY:--}
+SIGNING_IDENTITY=${VIGO_CODESIGN_IDENTITY:--}
 if [ "$SIGNING_IDENTITY" = "-" ]; then
     codesign --force --sign - "$STAGED_APP"
 else
@@ -72,7 +72,7 @@ else
 fi
 codesign --verify --deep --strict "$STAGED_APP"
 
-PREVIOUS_APP="$STAGING_DIR/Previous-NAKL.app"
+PREVIOUS_APP="$STAGING_DIR/Previous-ViGo.app"
 if [ -e "$APP_DIR" ]; then
     mv "$APP_DIR" "$PREVIOUS_APP"
 fi

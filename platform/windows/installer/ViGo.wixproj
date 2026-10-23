@@ -1,0 +1,8 @@
+<Project Sdk="WixToolset.Sdk/7.0.0">
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <OutputName>ViGo-2.0.0-windows-x64</OutputName>
+    <ViGoBuildDir Condition="'$(ViGoBuildDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\build\windows\Release</ViGoBuildDir>
+    <DefineConstants>ViGoBuildDir=$(ViGoBuildDir);RepositoryDir=$(MSBuildThisFileDirectory)..\..\..</DefineConstants>
+  </PropertyGroup>
+</Project>

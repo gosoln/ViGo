@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import NAKL
+@testable import ViGo
 
 @Test("Legacy method and text expansions migrate once")
 func legacySettingsMigrateOnce() throws {
@@ -67,7 +67,7 @@ private func legacyArchive(_ values: [(String, String)]) throws -> Data {
   )
 }
 
-@objc(NAKLTestLegacyShortcutFixture)
+@objc(ViGoTestLegacyShortcutFixture)
 private final class LegacyShortcutFixture: NSObject, NSCoding {
   let shortcut: String
   let text: String

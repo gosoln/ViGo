@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 
 enum class TypingMethod : std::uint32_t
@@ -74,4 +74,4 @@ class CompositionSession final
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace nakl::linux
+} // namespace vigo::linux

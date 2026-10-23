@@ -12,7 +12,7 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID reserved)
     static_cast<void>(reserved);
     if (reason == DLL_PROCESS_ATTACH)
     {
-        nakl::windows::SetModuleInstance(module);
+        vigo::windows::SetModuleInstance(module);
         DisableThreadLibraryCalls(module);
     }
     return TRUE;
@@ -20,13 +20,13 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID reserved)
 
 extern "C" HRESULT __stdcall DllCanUnloadNow()
 {
-    return nakl::windows::CanUnloadModule() ? S_OK : S_FALSE;
+    return vigo::windows::CanUnloadModule() ? S_OK : S_FALSE;
 }
 
 extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID class_id, REFIID interface_id,
                                                void **object)
 {
-    if (class_id != nakl::windows::kTextServiceClsid)
+    if (class_id != vigo::windows::kTextServiceClsid)
     {
         return CLASS_E_CLASSNOTAVAILABLE;
     }
@@ -34,7 +34,7 @@ extern "C" HRESULT __stdcall DllGetClassObject(REFCLSID class_id, REFIID interfa
     {
         return E_POINTER;
     }
-    auto *factory = new (std::nothrow) nakl::windows::ClassFactory();
+    auto *factory = new (std::nothrow) vigo::windows::ClassFactory();
     if (factory == nullptr)
     {
         return E_OUTOFMEMORY;
@@ -51,7 +51,7 @@ extern "C" HRESULT __stdcall DllRegisterServer()
     {
         return initialize_result;
     }
-    const HRESULT result = nakl::windows::RegisterTextService();
+    const HRESULT result = vigo::windows::RegisterTextService();
     if (initialize_result != RPC_E_CHANGED_MODE)
     {
         CoUninitialize();
@@ -66,7 +66,7 @@ extern "C" HRESULT __stdcall DllUnregisterServer()
     {
         return initialize_result;
     }
-    const HRESULT result = nakl::windows::UnregisterTextService();
+    const HRESULT result = vigo::windows::UnregisterTextService();
     if (initialize_result != RPC_E_CHANGED_MODE)
     {
         CoUninitialize();

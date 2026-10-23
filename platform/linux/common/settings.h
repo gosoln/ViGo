@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 
 struct SettingsSnapshot
@@ -24,4 +24,4 @@ struct SettingsSnapshot
 [[nodiscard]] bool IsApplicationExcluded(const SettingsSnapshot &settings,
                                          std::string_view application) noexcept;
 
-} // namespace nakl::linux
+} // namespace vigo::linux

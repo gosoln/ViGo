@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <string_view>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 
 class SurroundingTracker;
@@ -32,4 +32,4 @@ class CommittedTextClient
                                              SurroundingTracker &tracker,
                                              const EditAction &action);
 
-} // namespace nakl::linux
+} // namespace vigo::linux

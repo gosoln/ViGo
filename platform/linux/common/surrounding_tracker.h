@@ -7,15 +7,15 @@
 #include <string>
 #include <string_view>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 
-// Distinguishes native text updates caused by the key NAKL just handled from
+// Distinguishes native text updates caused by the key ViGo just handled from
 // cursor moves and edits made outside the composition session.
 class SurroundingTracker final
 {
   public:
-    // Returns true when a valid observation differs from the update NAKL was
+    // Returns true when a valid observation differs from the update ViGo was
     // expecting. Callers must reset their Composition Session in that case.
     [[nodiscard]] bool Observe(std::string_view text, std::size_t cursor,
                                std::size_t anchor);
@@ -44,4 +44,4 @@ class SurroundingTracker final
     std::optional<Snapshot> final_;
 };
 
-} // namespace nakl::linux
+} // namespace vigo::linux

@@ -22,7 +22,7 @@ from a macOS host build.
    platform/windows/scripts/build-release.ps1 -AcceptWix7Eula
    ```
 
-2. Before rebuilding the MSI, sign `NAKLTSF.dll` and `NAKLSettings.exe` with SHA-256 plus a trusted
+2. Before rebuilding the MSI, sign `ViGoTSF.dll` and `ViGoSettings.exe` with SHA-256 plus a trusted
    RFC 3161 timestamp. Verify each with `signtool verify /pa /all /v <file>`.
 3. Rebuild the MSI so it contains those signed binaries, then sign and verify the MSI itself.
 4. Archive the commit, Rust/Visual Studio/WiX versions, certificate subject, timestamp URL, SHA-256
@@ -37,19 +37,19 @@ On disposable VM snapshots, capture verbose `msiexec /l*v` logs for:
 - upgrade from the previous signed MSI;
 - forced failure proving rollback restores the prior profile/files;
 - uninstall proving the TSF profile, COM class, installed files, shortcut, and current-user startup
-  entry are removed while `HKCU\Software\NAKL` preferences remain.
+  entry are removed while `HKCU\Software\ViGo` preferences remain.
 
 The MSI includes an opt-in deferred rollback fault action. Exercise both an initially absent
-registration and an already registered repair with `NAKL_TEST_FAIL_AFTER_REGISTER=1`; for example:
+registration and an already registered repair with `VIGO_TEST_FAIL_AFTER_REGISTER=1`; for example:
 
 ```powershell
-msiexec /i .\NAKL-2.0.0-windows-x64.msi /qb /l*vx $env:TEMP\nakl-install-rollback.log NAKL_TEST_FAIL_AFTER_REGISTER=1
-msiexec /fvecmus .\NAKL-2.0.0-windows-x64.msi /qb /l*vx $env:TEMP\nakl-repair-rollback.log NAKL_TEST_FAIL_AFTER_REGISTER=1
+msiexec /i .\ViGo-2.0.0-windows-x64.msi /qb /l*vx $env:TEMP\vigo-install-rollback.log VIGO_TEST_FAIL_AFTER_REGISTER=1
+msiexec /fvecmus .\ViGo-2.0.0-windows-x64.msi /qb /l*vx $env:TEMP\vigo-repair-rollback.log VIGO_TEST_FAIL_AFTER_REGISTER=1
 ```
 
 After each forced failure, verify the COM `InProcServer32` path and TSF profile equal their exact
 pre-test values. The rollback action re-registers the previously discovered DLL after Windows
-Installer restores its file, or unregisters NAKL when no registration existed before the action.
+Installer restores its file, or unregisters ViGo when no registration existed before the action.
 
 Applications may retain the in-process DLL until sign-out. Never overwrite or delete a loaded TSF
 DLL manually.

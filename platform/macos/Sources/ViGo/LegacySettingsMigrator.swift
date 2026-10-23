@@ -6,7 +6,7 @@ struct LegacySettingsSource {
 
   static func loadFromDisk(fileManager: FileManager = .default) -> Self {
     let legacyDefaults = UserDefaults(suiteName: "com.zepvn.NAKL")
-    let storedMethod = legacyDefaults?.object(forKey: "NAKLKeyboardMethod") as? NSNumber
+    let storedMethod = legacyDefaults?.object(forKey: "ViGoKeyboardMethod") as? NSNumber
     let archiveURL = fileManager.homeDirectoryForCurrentUser
       .appendingPathComponent("Library/Application Support/NAKL/shortcuts.setting")
     let archive = try? Data(contentsOf: archiveURL, options: [.mappedIfSafe])
@@ -97,7 +97,7 @@ enum LegacySettingsMigrator {
   }
 }
 
-@objc(NAKLLegacyShortcutRecord)
+@objc(ViGoLegacyShortcutRecord)
 private final class LegacyShortcutRecord: NSObject, NSSecureCoding {
   static let supportsSecureCoding = true
 

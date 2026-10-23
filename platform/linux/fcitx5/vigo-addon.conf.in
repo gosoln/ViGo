@@ -1,8 +1,8 @@
 [Addon]
-Name=NAKL
+Name=ViGo
 Category=InputMethod
 Version=2.0.0
-Library=nakl
+Library=vigo
 Type=SharedLibrary
 OnDemand=True
 Configurable=False

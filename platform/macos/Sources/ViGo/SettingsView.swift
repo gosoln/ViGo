@@ -99,7 +99,7 @@ private struct GeneralSettingsView: View {
       } header: {
         Text("Quyền hệ thống")
       } footer: {
-        Text("NAKL cần quyền này để nhập văn bản đã commit mà không tạo gạch chân.")
+        Text("ViGo cần quyền này để nhập văn bản đã commit mà không tạo gạch chân.")
       }
 
       if !settings.excludedApplications.isEmpty {
@@ -127,7 +127,7 @@ private struct GeneralSettingsView: View {
         } header: {
           Text("Ứng dụng loại trừ")
         } footer: {
-          Text("Thêm ứng dụng từ menu NAKL khi ứng dụng đó đang được sử dụng.")
+          Text("Thêm ứng dụng từ menu ViGo khi ứng dụng đó đang được sử dụng.")
         }
       }
     }
@@ -223,7 +223,7 @@ private struct AboutView: View {
         .font(.system(size: 64))
         .foregroundStyle(.tint)
 
-      Text("NAKL")
+      Text("ViGo")
         .font(.largeTitle.bold())
 
       Text("Phiên bản 2.0 · M1")
@@ -232,7 +232,7 @@ private struct AboutView: View {
       Text("Bộ gõ tiếng Việt riêng tư cho macOS, Windows và Linux.")
         .multilineTextAlignment(.center)
 
-      Link("Mã nguồn và tài liệu", destination: URL(string: "https://github.com/huyphan/NAKL")!)
+      Link("Mã nguồn và tài liệu", destination: URL(string: "https://github.com/huyphan/ViGo")!)
 
       Text("GPL-3.0-or-later · Xử lý phím hoàn toàn trên thiết bị")
         .font(.caption)

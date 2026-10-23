@@ -12,9 +12,9 @@ Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/desi
 - `cargo fmt --all --check` verifies Rust formatting.
 - `cargo clippy --workspace --all-targets -- -D warnings` treats Rust diagnostics as failures.
 - `cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10` and the equivalent `ffi` target run bounded coverage-guided safety campaigns.
-- `cargo build -p nakl-core && swift build --package-path platform/macos` compiles the macOS adapter/UI; run `swift format lint --recursive --strict platform/macos/Sources platform/macos/Tests` before review.
+- `cargo build -p vigo-core && swift build --package-path platform/macos` compiles the macOS adapter/UI; run `swift format lint --recursive --strict platform/macos/Sources platform/macos/Tests` before review.
 - `make -C legacy/oracle` builds `build/legacy-oracle`; for example, run `build/legacy-oracle telex tieengs`.
-- `cargo build -p nakl-core` emits the Rust library. Compile `core/tests/ffi_smoke.c` against `core/include/nakl_core.h` when changing the ABI.
+- `cargo build -p vigo-core` emits the Rust library. Compile `core/tests/ffi_smoke.c` against `core/include/vigo_core.h` when changing the ABI.
 
 ## Coding Style & Naming Conventions
 
@@ -22,7 +22,7 @@ Use `rustfmt` defaults and descriptive domain names such as `CompositionSession`
 
 ## Testing Guidelines
 
-Work red → green through the public `CompositionSession::process` seam. Add one behavioral slice at a time; assert observable actions or replayed text, never private buffers or helper calls. Record unchanged legacy output in `legacy-characterization.tsv`, approved NAKL 2.0 behavior in `product-expected.tsv`, and unresolved semantics in `pending-review.tsv`. Keep C ABI ownership and UTF-8 lifetime covered by integration tests.
+Work red → green through the public `CompositionSession::process` seam. Add one behavioral slice at a time; assert observable actions or replayed text, never private buffers or helper calls. Record unchanged legacy output in `legacy-characterization.tsv`, approved ViGo 2.0 behavior in `product-expected.tsv`, and unresolved semantics in `pending-review.tsv`. Keep C ABI ownership and UTF-8 lifetime covered by integration tests.
 
 ## Commit & Pull Request Guidelines
 

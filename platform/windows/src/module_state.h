@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 void SetModuleInstance(HINSTANCE instance) noexcept;
@@ -17,4 +17,4 @@ void LockModule() noexcept;
 void UnlockModule() noexcept;
 [[nodiscard]] bool CanUnloadModule() noexcept;
 
-} // namespace nakl::windows
+} // namespace vigo::windows

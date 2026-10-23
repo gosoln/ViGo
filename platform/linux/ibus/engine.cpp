@@ -10,40 +10,40 @@
 #include <new>
 #include <vector>
 
-struct _NaklIBusEngine
+struct _VigoIBusEngine
 {
     IBusEngine parent_instance;
-    nakl::linux::CompositionSession *session;
-    nakl::linux::SettingsSnapshot *settings;
-    nakl::linux::SurroundingTracker *surrounding;
+    vigo::linux::CompositionSession *session;
+    vigo::linux::SettingsSnapshot *settings;
+    vigo::linux::SurroundingTracker *surrounding;
     std::string *client;
     gboolean excluded;
-    nakl::linux::TypingMethod method;
+    vigo::linux::TypingMethod method;
     gboolean secure;
 };
 
-struct _NaklIBusEngineClass
+struct _VigoIBusEngineClass
 {
     IBusEngineClass parent_class;
 };
 
-using NaklIBusEngine = struct _NaklIBusEngine;
-using NaklIBusEngineClass = struct _NaklIBusEngineClass;
+using VigoIBusEngine = struct _VigoIBusEngine;
+using VigoIBusEngineClass = struct _VigoIBusEngineClass;
 
-G_DEFINE_TYPE(NaklIBusEngine, nakl_ibus_engine, IBUS_TYPE_ENGINE)
+G_DEFINE_TYPE(VigoIBusEngine, vigo_ibus_engine, IBUS_TYPE_ENGINE)
 
 namespace
 {
 
-[[nodiscard]] nakl::linux::TypingMethod RequestedMethod(IBusEngine *engine)
+[[nodiscard]] vigo::linux::TypingMethod RequestedMethod(IBusEngine *engine)
 {
     const gchar *name = ibus_engine_get_name(engine);
     return name != nullptr && std::strstr(name, "vni") != nullptr
-               ? nakl::linux::TypingMethod::Vni
-               : nakl::linux::TypingMethod::Telex;
+               ? vigo::linux::TypingMethod::Vni
+               : vigo::linux::TypingMethod::Telex;
 }
 
-void ResetSession(NaklIBusEngine *self)
+void ResetSession(VigoIBusEngine *self)
 {
     if (self->session != nullptr)
     {
@@ -51,7 +51,7 @@ void ResetSession(NaklIBusEngine *self)
     }
 }
 
-[[nodiscard]] bool EnsureSession(NaklIBusEngine *self)
+[[nodiscard]] bool EnsureSession(VigoIBusEngine *self)
 {
     if (self->settings != nullptr && (!self->settings->enabled || self->excluded != FALSE))
     {
@@ -64,21 +64,21 @@ void ResetSession(NaklIBusEngine *self)
     }
     delete self->session;
     self->method = requested;
-    const std::vector<nakl::linux::TextExpansion> empty_expansions;
+    const std::vector<vigo::linux::TextExpansion> empty_expansions;
     const auto &expansions =
         self->settings != nullptr ? self->settings->expansions : empty_expansions;
-    self->session = new (std::nothrow) nakl::linux::CompositionSession(requested, expansions);
+    self->session = new (std::nothrow) vigo::linux::CompositionSession(requested, expansions);
     return self->session != nullptr && self->session->valid();
 }
 
-void ReloadSettings(NaklIBusEngine *self)
+void ReloadSettings(VigoIBusEngine *self)
 {
     delete self->session;
     self->session = nullptr;
     delete self->settings;
-    self->settings = new (std::nothrow) nakl::linux::SettingsSnapshot(nakl::linux::LoadSettings());
+    self->settings = new (std::nothrow) vigo::linux::SettingsSnapshot(vigo::linux::LoadSettings());
     self->excluded = self->settings != nullptr && self->client != nullptr &&
-                             nakl::linux::IsApplicationExcluded(*self->settings, *self->client)
+                             vigo::linux::IsApplicationExcluded(*self->settings, *self->client)
                          ? TRUE
                          : FALSE;
     if (self->settings != nullptr && self->settings->enabled && self->excluded == FALSE)
@@ -94,7 +94,7 @@ void ReloadSettings(NaklIBusEngine *self)
     return (state & CommandModifiers) != 0;
 }
 
-class IBusCommittedClient final : public nakl::linux::CommittedTextClient
+class IBusCommittedClient final : public vigo::linux::CommittedTextClient
 {
   public:
     explicit IBusCommittedClient(IBusEngine *engine) : engine_(engine) {}
@@ -102,7 +102,7 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
     [[nodiscard]] bool CanReplaceBefore(std::size_t scalar_count,
                                         std::string_view expected_before) const noexcept override
     {
-        const auto *self = reinterpret_cast<const NaklIBusEngine *>(engine_);
+        const auto *self = reinterpret_cast<const VigoIBusEngine *>(engine_);
         if (scalar_count > static_cast<std::size_t>(std::numeric_limits<gint>::max()) ||
             (engine_->client_capabilities & IBUS_CAP_SURROUNDING_TEXT) == 0 ||
             self->surrounding == nullptr)
@@ -131,7 +131,7 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
 [[nodiscard]] gboolean ProcessKeyEvent(IBusEngine *engine, guint keyval, guint keycode, guint state)
 {
     static_cast<void>(keycode);
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     try
     {
         if ((state & IBUS_RELEASE_MASK) != 0)
@@ -176,17 +176,17 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
             return FALSE;
         }
 
-        nakl::linux::InputEvent event{.kind = nakl::linux::EventKind::Boundary};
+        vigo::linux::InputEvent event{.kind = vigo::linux::EventKind::Boundary};
         if (keyval == IBUS_KEY_BackSpace)
         {
-            event.kind = nakl::linux::EventKind::Backspace;
+            event.kind = vigo::linux::EventKind::Backspace;
         }
         else
         {
             const auto scalar = static_cast<char32_t>(ibus_keyval_to_unicode(keyval));
             if (scalar >= U' ' && scalar != 0x7F)
             {
-                event = {.kind = nakl::linux::EventKind::Text, .scalar = scalar};
+                event = {.kind = vigo::linux::EventKind::Text, .scalar = scalar};
             }
         }
 
@@ -198,7 +198,7 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
             return FALSE;
         }
         IBusCommittedClient client(engine);
-        if (preview->kind == nakl::linux::EditAction::Kind::ReplaceBefore &&
+        if (preview->kind == vigo::linux::EditAction::Kind::ReplaceBefore &&
             !client.CanReplaceBefore(preview->delete_scalars, preview->expected_before))
         {
             // A committed replacement is atomic only when the client supports
@@ -215,7 +215,7 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
             self->session = nullptr;
             return FALSE;
         }
-        if (action->kind == nakl::linux::EditAction::Kind::PassThrough)
+        if (action->kind == vigo::linux::EditAction::Kind::PassThrough)
         {
             if (self->surrounding == nullptr || !self->surrounding->ExpectPassThrough(event))
             {
@@ -228,7 +228,7 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
             ResetSession(self);
             return FALSE;
         }
-        if (nakl::linux::ApplyTrackedCommittedEdit(client, *self->surrounding, *action))
+        if (vigo::linux::ApplyTrackedCommittedEdit(client, *self->surrounding, *action))
         {
             return TRUE;
         }
@@ -246,12 +246,12 @@ class IBusCommittedClient final : public nakl::linux::CommittedTextClient
 
 void Reset(IBusEngine *engine)
 {
-    ResetSession(reinterpret_cast<NaklIBusEngine *>(engine));
+    ResetSession(reinterpret_cast<VigoIBusEngine *>(engine));
 }
 
 void FocusIn(IBusEngine *engine)
 {
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     try
     {
         ReloadSettings(self);
@@ -266,7 +266,7 @@ void FocusIn(IBusEngine *engine)
 void FocusInId(IBusEngine *engine, const gchar *object_path, const gchar *client)
 {
     static_cast<void>(object_path);
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     try
     {
         delete self->client;
@@ -282,7 +282,7 @@ void FocusInId(IBusEngine *engine, const gchar *object_path, const gchar *client
 
 void FocusOut(IBusEngine *engine)
 {
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     if (self->surrounding != nullptr)
     {
         self->surrounding->Clear();
@@ -298,7 +298,7 @@ void FocusOutId(IBusEngine *engine, const gchar *object_path)
 
 void Enable(IBusEngine *engine)
 {
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     try
     {
         ReloadSettings(self);
@@ -318,7 +318,7 @@ void Disable(IBusEngine *engine)
 
 void SetContentType(IBusEngine *engine, guint purpose, guint hints)
 {
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     self->secure = purpose == IBUS_INPUT_PURPOSE_PASSWORD || purpose == IBUS_INPUT_PURPOSE_PIN ||
                    (hints & IBUS_INPUT_HINT_PRIVATE) != 0;
     if (self->secure != FALSE)
@@ -329,7 +329,7 @@ void SetContentType(IBusEngine *engine, guint purpose, guint hints)
 
 void SetSurroundingText(IBusEngine *engine, IBusText *text, guint cursor, guint anchor)
 {
-    auto *self = reinterpret_cast<NaklIBusEngine *>(engine);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(engine);
     try
     {
         const gchar *contents = text != nullptr ? ibus_text_get_text(text) : nullptr;
@@ -344,7 +344,7 @@ void SetSurroundingText(IBusEngine *engine, IBusText *text, guint cursor, guint 
         }
         if (self->surrounding == nullptr)
         {
-            self->surrounding = new nakl::linux::SurroundingTracker();
+            self->surrounding = new vigo::linux::SurroundingTracker();
         }
         if (self->surrounding->Observe(contents, cursor, anchor))
         {
@@ -363,7 +363,7 @@ void SetSurroundingText(IBusEngine *engine, IBusText *text, guint cursor, guint 
 
 void Finalize(GObject *object)
 {
-    auto *self = reinterpret_cast<NaklIBusEngine *>(object);
+    auto *self = reinterpret_cast<VigoIBusEngine *>(object);
     delete self->session;
     self->session = nullptr;
     delete self->settings;
@@ -372,23 +372,23 @@ void Finalize(GObject *object)
     self->surrounding = nullptr;
     delete self->client;
     self->client = nullptr;
-    G_OBJECT_CLASS(nakl_ibus_engine_parent_class)->finalize(object);
+    G_OBJECT_CLASS(vigo_ibus_engine_parent_class)->finalize(object);
 }
 
 } // namespace
 
-static void nakl_ibus_engine_init(NaklIBusEngine *self)
+static void vigo_ibus_engine_init(VigoIBusEngine *self)
 {
     self->session = nullptr;
     self->settings = nullptr;
     self->surrounding = nullptr;
     self->client = nullptr;
     self->excluded = FALSE;
-    self->method = nakl::linux::TypingMethod::Telex;
+    self->method = vigo::linux::TypingMethod::Telex;
     self->secure = FALSE;
 }
 
-static void nakl_ibus_engine_class_init(NaklIBusEngineClass *klass)
+static void vigo_ibus_engine_class_init(VigoIBusEngineClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS(klass);
     object_class->finalize = Finalize;

@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <NAKL.app> <NAKL.pkg>" >&2
+    echo "Usage: $0 <ViGo.app> <ViGo.pkg>" >&2
     exit 64
 fi
 

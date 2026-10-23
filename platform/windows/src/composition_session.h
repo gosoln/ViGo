@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 enum class TypingMethod : std::uint32_t
@@ -77,4 +77,4 @@ class CompositionSession final
 [[nodiscard]] std::size_t Utf16UnitsForTrailingScalars(std::u16string_view text,
                                                        std::size_t scalar_count);
 
-} // namespace nakl::windows
+} // namespace vigo::windows

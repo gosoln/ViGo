@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "nakl-core"
+name = "vigo-core"
 version = "0.1.0"

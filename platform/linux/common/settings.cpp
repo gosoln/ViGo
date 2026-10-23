@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <fstream>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 namespace
 {
@@ -14,18 +14,18 @@ constexpr std::size_t MaxEntries = 256;
 
 [[nodiscard]] std::filesystem::path SettingsPath()
 {
-    if (const char *override_path = std::getenv("NAKL_CONFIG_FILE");
+    if (const char *override_path = std::getenv("VIGO_CONFIG_FILE");
         override_path != nullptr && *override_path != '\0')
     {
         return override_path;
     }
     if (const char *xdg = std::getenv("XDG_CONFIG_HOME"); xdg != nullptr && *xdg != '\0')
     {
-        return std::filesystem::path(xdg) / "nakl" / "settings.conf";
+        return std::filesystem::path(xdg) / "vigo" / "settings.conf";
     }
     if (const char *user_home = std::getenv("HOME"); user_home != nullptr && *user_home != '\0')
     {
-        return std::filesystem::path(user_home) / ".config" / "nakl" / "settings.conf";
+        return std::filesystem::path(user_home) / ".config" / "vigo" / "settings.conf";
     }
     return {};
 }
@@ -141,4 +141,4 @@ bool IsApplicationExcluded(const SettingsSnapshot &settings,
                        });
 }
 
-} // namespace nakl::linux
+} // namespace vigo::linux

@@ -1,8 +1,8 @@
 import AppKit
 import InputMethodKit
 
-@objc(NAKLInputController)
-final class NAKLInputController: IMKInputController {
+@objc(ViGoInputController)
+final class ViGoInputController: IMKInputController {
   private var activeConfiguration: CoreConfigurationSnapshot?
   private var coreSession: CoreSession?
   private var markedComposition = MarkedComposition()
@@ -13,7 +13,7 @@ final class NAKLInputController: IMKInputController {
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(settingsDidChange),
-      name: .naklSettingsDidChange,
+      name: .vigoSettingsDidChange,
       object: nil
     )
     refreshConfigurationIfNeeded()

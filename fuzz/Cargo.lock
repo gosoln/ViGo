@@ -70,15 +70,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "nakl-core"
+name = "vigo-core"
 version = "0.1.0"
 
 [[package]]
-name = "nakl-core-fuzz"
+name = "vigo-core-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
- "nakl-core",
+ "vigo-core",
 ]
 
 [[package]]

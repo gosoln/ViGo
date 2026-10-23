@@ -8,13 +8,13 @@
 namespace
 {
 
-using nakl::windows::CompositionSession;
-using nakl::windows::EditAction;
-using nakl::windows::EventKind;
-using nakl::windows::InputEvent;
-using nakl::windows::TextExpansion;
-using nakl::windows::TypingMethod;
-using nakl::windows::Utf16UnitsForTrailingScalars;
+using vigo::windows::CompositionSession;
+using vigo::windows::EditAction;
+using vigo::windows::EventKind;
+using vigo::windows::InputEvent;
+using vigo::windows::TextExpansion;
+using vigo::windows::TypingMethod;
+using vigo::windows::Utf16UnitsForTrailingScalars;
 
 [[noreturn]] void Fail(std::string_view message)
 {

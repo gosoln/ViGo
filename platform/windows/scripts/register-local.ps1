@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $false)]
-    [string]$DllPath = "build/windows/Debug/NAKLTSF.dll"
+    [string]$DllPath = "build/windows/Debug/ViGoTSF.dll"
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,5 +27,5 @@ if ($process.ExitCode -ne 0) {
     throw "regsvr32 failed with exit code $($process.ExitCode)."
 }
 
-Write-Host "Registered NAKL TSF profile from $resolvedDll"
-Write-Host "Sign out and back in, then enable NAKL under Vietnamese language options."
+Write-Host "Registered ViGo TSF profile from $resolvedDll"
+Write-Host "Sign out and back in, then enable ViGo under Vietnamese language options."

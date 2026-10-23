@@ -1,4 +1,4 @@
-use nakl_core::{Action, CompositionSession, InputEvent, TypingMethod};
+use vigo_core::{Action, CompositionSession, InputEvent, TypingMethod};
 
 const INPUT_ALPHABET: &[char] = &[
     'a', 'A', 'e', 'i', 'o', 'u', 'y', 'd', 'w', 's', 'f', 'r', 'x', 'j', 'z', '0', '1', '2', '3',

@@ -1,6 +1,6 @@
 # macOS UI
 
-NAKL is a menu-bar utility with no default Dock icon or main document window. The menu keeps only frequent actions: choose Telex or VNI, enable or disable typing, open settings, and quit.
+ViGo is a menu-bar utility with no default Dock icon or main document window. The menu keeps only frequent actions: choose Telex or VNI, enable or disable typing, open settings, and quit.
 
 The 620×400 settings window uses native controls and three tabs:
 

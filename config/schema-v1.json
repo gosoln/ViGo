@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://nakl.example/schema/settings-v1.json",
-  "title": "NAKL settings version 1",
+  "$id": "https://vigo.example/schema/settings-v1.json",
+  "title": "ViGo settings version 1",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "enabled", "typing_method", "text_expansions", "excluded_applications"],

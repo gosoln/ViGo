@@ -4,10 +4,10 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PACKAGE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 REPOSITORY_DIR=$(CDPATH= cd -- "$PACKAGE_DIR/../.." && pwd)
-APP_DIR="$REPOSITORY_DIR/build/NAKL.app"
+APP_DIR="$REPOSITORY_DIR/build/ViGo.app"
 WORK_DIR="$REPOSITORY_DIR/build/macos-package"
 PAYLOAD_ROOT="$WORK_DIR/root"
-COMPONENT_PACKAGE="$WORK_DIR/NAKL-component.pkg"
+COMPONENT_PACKAGE="$WORK_DIR/ViGo-component.pkg"
 DIST_DIR="$REPOSITORY_DIR/dist"
 
 "$SCRIPT_DIR/build-app.sh" >/dev/null
@@ -16,8 +16,8 @@ VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
 BUILD_NUMBER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" \
     "$APP_DIR/Contents/Info.plist")
 PACKAGE_VERSION="$VERSION.$BUILD_NUMBER"
-OUTPUT_PACKAGE="$DIST_DIR/NAKL-$VERSION-$BUILD_NUMBER.pkg"
-STAGED_PACKAGE="$WORK_DIR/NAKL-$VERSION-$BUILD_NUMBER.pkg"
+OUTPUT_PACKAGE="$DIST_DIR/ViGo-$VERSION-$BUILD_NUMBER.pkg"
+STAGED_PACKAGE="$WORK_DIR/ViGo-$VERSION-$BUILD_NUMBER.pkg"
 
 if [ -e "$OUTPUT_PACKAGE" ]; then
     echo "Refusing to overwrite release artifact: $OUTPUT_PACKAGE" >&2
@@ -26,7 +26,7 @@ fi
 
 rm -rf "$WORK_DIR"
 mkdir -p "$PAYLOAD_ROOT/Library/Input Methods" "$DIST_DIR"
-ditto --noextattr --norsrc "$APP_DIR" "$PAYLOAD_ROOT/Library/Input Methods/NAKL.app"
+ditto --noextattr --norsrc "$APP_DIR" "$PAYLOAD_ROOT/Library/Input Methods/ViGo.app"
 if find "$PAYLOAD_ROOT" -name '._*' -print -quit | grep -q .; then
     echo "Package payload contains AppleDouble metadata." >&2
     exit 1
@@ -35,7 +35,7 @@ fi
 xcrun pkgbuild \
     --root "$PAYLOAD_ROOT" \
     --component-plist "$PACKAGE_DIR/Packaging/component.plist" \
-    --identifier "com.nakl.inputmethod.NAKL.pkg" \
+    --identifier "com.gosoln.inputmethod.ViGo.pkg" \
     --version "$PACKAGE_VERSION" \
     --install-location / \
     --ownership recommended \
@@ -44,10 +44,10 @@ xcrun pkgbuild \
 sed "s/@VERSION@/$PACKAGE_VERSION/g" \
     "$PACKAGE_DIR/Packaging/Distribution.xml.in" > "$WORK_DIR/Distribution.xml"
 
-INSTALLER_IDENTITY=${NAKL_INSTALLER_IDENTITY:-}
+INSTALLER_IDENTITY=${VIGO_INSTALLER_IDENTITY:-}
 if [ -n "$INSTALLER_IDENTITY" ]; then
-    if [ -z "${NAKL_CODESIGN_IDENTITY:-}" ] || [ "$NAKL_CODESIGN_IDENTITY" = "-" ]; then
-        echo "A signed package requires NAKL_CODESIGN_IDENTITY." >&2
+    if [ -z "${VIGO_CODESIGN_IDENTITY:-}" ] || [ "$VIGO_CODESIGN_IDENTITY" = "-" ]; then
+        echo "A signed package requires VIGO_CODESIGN_IDENTITY." >&2
         exit 1
     fi
     if ! codesign -dv --verbose=4 "$APP_DIR" 2>&1 | \

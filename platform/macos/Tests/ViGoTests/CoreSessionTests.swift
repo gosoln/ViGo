@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import Testing
 
-@testable import NAKL
+@testable import ViGo
 
 @Test("C ABI session applies configured text expansions")
 func coreSessionAppliesTextExpansion() throws {

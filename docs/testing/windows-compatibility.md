@@ -1,13 +1,13 @@
 # Windows Compatibility Matrix
 
-Test on Windows 11 x64 with a signed NAKL TSF DLL registered under the Vietnamese language profile. Use fresh documents and only the synthetic strings below. Record Windows build, client version, architecture, NAKL commit, and PASS/FAIL/BLOCKED; never capture unrelated Keystroke Content or secure-field contents.
+Test on Windows 11 x64 with a signed ViGo TSF DLL registered under the Vietnamese language profile. Use fresh documents and only the synthetic strings below. Record Windows build, client version, architecture, ViGo commit, and PASS/FAIL/BLOCKED; never capture unrelated Keystroke Content or secure-field contents.
 
 ## Automated Contract
 
 Run before system registration:
 
 ```powershell
-cargo build -p nakl-core
+cargo build -p vigo-core
 cmake -S platform/windows -B build/windows -A x64 -DBUILD_TESTING=ON
 cmake --build build/windows --config Debug
 ctest --test-dir build/windows -C Debug --output-on-failure
@@ -27,7 +27,7 @@ The fake editor must pass R1–R6 from [Cross-Platform Composition Regressions](
 | W6 | Type `tieengs` in a password field | Seven raw characters; no crash or replacement |
 | W7 | Type C1, Backspace, then `f` | `tiền` |
 | W8 | Expansion `btw` → `by the way`, then type `btw ` | `by the way ` |
-| W9 | Disable NAKL and type `tieengs`, then re-enable | Literal while disabled; W1 after re-enable |
+| W9 | Disable ViGo and type `tieengs`, then re-enable | Literal while disabled; W1 after re-enable |
 | W10 | Install, repair, upgrade, rollback, and uninstall MSI | Profile/receipt state is correct and settings survive supported transitions |
 | W11 | Add the current `.exe` to exclusions, refocus, type `tieengs` | Literal input; W1 after removing the exclusion and refocusing |
 | W12 | Invoke configured toggle and method-switch hot keys | Enabled state and Telex/VNI selection change once per press |

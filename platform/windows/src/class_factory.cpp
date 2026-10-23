@@ -5,7 +5,7 @@
 
 #include <new>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 ClassFactory::ClassFactory()
@@ -71,4 +71,4 @@ HRESULT ClassFactory::LockServer(BOOL lock)
     return S_OK;
 }
 
-} // namespace nakl::windows
+} // namespace vigo::windows

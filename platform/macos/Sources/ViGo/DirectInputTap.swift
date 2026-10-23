@@ -67,7 +67,7 @@ final class DirectInputTap {
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(settingsDidChange),
-      name: .naklSettingsDidChange,
+      name: .vigoSettingsDidChange,
       object: nil
     )
     NSWorkspace.shared.notificationCenter.addObserver(

@@ -2,17 +2,17 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <NAKL.app> <NAKL.pkg>" >&2
+    echo "Usage: $0 <ViGo.app> <ViGo.pkg>" >&2
     exit 64
 fi
 
 APP_PATH=$1
 PACKAGE_PATH=$2
-EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/NAKL"
-EXPECTED_BUNDLE_ID="com.nakl.inputmethod.NAKL"
+EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/ViGo"
+EXPECTED_BUNDLE_ID="com.gosoln.inputmethod.ViGo"
 
 if [ ! -x "$EXECUTABLE_PATH" ]; then
-    echo "Missing NAKL executable: $EXECUTABLE_PATH" >&2
+    echo "Missing ViGo executable: $EXECUTABLE_PATH" >&2
     exit 1
 fi
 if [ ! -f "$PACKAGE_PATH" ]; then
@@ -52,21 +52,21 @@ fi
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 xar -tf "$PACKAGE_PATH" >/dev/null
 
-AUDIT_DIR=$(mktemp -d /tmp/nakl-package-audit.XXXXXX)
+AUDIT_DIR=$(mktemp -d /tmp/vigo-package-audit.XXXXXX)
 cleanup() {
     rm -rf "$AUDIT_DIR"
 }
 trap cleanup EXIT HUP INT TERM
 pkgutil --expand-full "$PACKAGE_PATH" "$AUDIT_DIR/expanded"
-EMBEDDED_APP="$AUDIT_DIR/expanded/NAKL-component.pkg/Payload/Library/Input Methods/NAKL.app"
+EMBEDDED_APP="$AUDIT_DIR/expanded/ViGo-component.pkg/Payload/Library/Input Methods/ViGo.app"
 if [ ! -d "$EMBEDDED_APP" ]; then
-    echo "Package does not contain the expected NAKL app path." >&2
+    echo "Package does not contain the expected ViGo app path." >&2
     exit 1
 fi
 diff -qr "$APP_PATH" "$EMBEDDED_APP"
 
-PACKAGE_INFO="$AUDIT_DIR/expanded/NAKL-component.pkg/PackageInfo"
-grep -q "identifier=\"com.nakl.inputmethod.NAKL.pkg\"" "$PACKAGE_INFO"
+PACKAGE_INFO="$AUDIT_DIR/expanded/ViGo-component.pkg/PackageInfo"
+grep -q "identifier=\"com.gosoln.inputmethod.ViGo.pkg\"" "$PACKAGE_INFO"
 grep -q "version=\"$MARKETING_VERSION.$BUILD_NUMBER\"" "$PACKAGE_INFO"
 
 DISTRIBUTION="$AUDIT_DIR/expanded/Distribution"

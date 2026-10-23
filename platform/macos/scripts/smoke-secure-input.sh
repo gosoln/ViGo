@@ -3,8 +3,8 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PACKAGE_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-INSTALLED_APP="$HOME/Library/Input Methods/NAKL.app"
-INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/NAKL"
+INSTALLED_APP="$HOME/Library/Input Methods/ViGo.app"
+INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/ViGo"
 FIXTURE_PID=""
 
 cleanup() {
@@ -19,35 +19,35 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 if [ ! -x "$INSTALLED_EXECUTABLE" ]; then
-    echo "Install NAKL locally before running the secure-input smoke test." >&2
+    echo "Install ViGo locally before running the secure-input smoke test." >&2
     exit 1
 fi
 
-METHOD=$(defaults read com.nakl.inputmethod.NAKL input.method 2>/dev/null || echo telex)
-ENABLED=$(defaults read com.nakl.inputmethod.NAKL input.enabled 2>/dev/null || echo 1)
+METHOD=$(defaults read com.gosoln.inputmethod.ViGo input.method 2>/dev/null || echo telex)
+ENABLED=$(defaults read com.gosoln.inputmethod.ViGo input.enabled 2>/dev/null || echo 1)
 if [ "$METHOD" != "telex" ] || [ "$ENABLED" = "0" ]; then
-    echo "Select Telex and enable NAKL before running the secure-input smoke test." >&2
+    echo "Select Telex and enable ViGo before running the secure-input smoke test." >&2
     exit 1
 fi
 
 open "$INSTALLED_APP"
-NAKL_PID=""
+VIGO_PID=""
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-    NAKL_PID=$(ps -axo pid=,command= | awk -v command="$INSTALLED_EXECUTABLE" '
+    VIGO_PID=$(ps -axo pid=,command= | awk -v command="$INSTALLED_EXECUTABLE" '
         { pid = $1; $1 = ""; sub(/^ /, "", $0); if ($0 == command) { print pid; exit } }
     ')
-    [ -n "$NAKL_PID" ] && break
+    [ -n "$VIGO_PID" ] && break
     sleep 0.2
 done
-if [ -z "$NAKL_PID" ]; then
-    echo "Installed NAKL did not launch." >&2
+if [ -z "$VIGO_PID" ]; then
+    echo "Installed ViGo did not launch." >&2
     exit 1
 fi
 "$SCRIPT_DIR/input-source-tool.swift" restore-abc >/dev/null
 
-swift build --package-path "$PACKAGE_DIR" --product NAKLCompatibilityFixture >/dev/null
+swift build --package-path "$PACKAGE_DIR" --product ViGoCompatibilityFixture >/dev/null
 FIXTURE_DIR=$(swift build --package-path "$PACKAGE_DIR" --show-bin-path)
-FIXTURE_EXECUTABLE="$FIXTURE_DIR/NAKLCompatibilityFixture"
+FIXTURE_EXECUTABLE="$FIXTURE_DIR/ViGoCompatibilityFixture"
 if ps -axo command= | grep -Fx "$FIXTURE_EXECUTABLE" >/dev/null; then
     echo "Close the existing compatibility fixture before running this test." >&2
     exit 1
@@ -57,7 +57,7 @@ fi
 FIXTURE_PID=$!
 FIXTURE_READY=0
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-    if osascript -e 'tell application "System Events" to return exists process "NAKLCompatibilityFixture"' | grep -qx true; then
+    if osascript -e 'tell application "System Events" to return exists process "ViGoCompatibilityFixture"' | grep -qx true; then
         FIXTURE_READY=1
         break
     fi
@@ -70,7 +70,7 @@ fi
 
 RESULT=$(osascript <<'APPLESCRIPT'
 tell application "System Events"
-  tell process "NAKLCompatibilityFixture"
+  tell process "ViGoCompatibilityFixture"
     set frontmost to true
     delay 0.5
     set uiItems to entire contents of front window

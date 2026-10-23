@@ -13,9 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ notification: Notification) {
     let connectionName =
       Bundle.main.object(forInfoDictionaryKey: "InputMethodConnectionName")
-      as? String ?? "com.nakl.inputmethod.NAKL_Connection"
+      as? String ?? "com.gosoln.inputmethod.ViGo_Connection"
     guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
-      preconditionFailure("NAKL requires a bundle identifier")
+      preconditionFailure("ViGo requires a bundle identifier")
     }
     inputMethodServer = IMKServer(
       name: connectionName,
@@ -63,7 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct NAKLApp: App {
+struct ViGoApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var accessibility = AccessibilityAuthorization.shared
   @StateObject private var activeApplication = ActiveApplicationMonitor()
@@ -71,7 +71,7 @@ struct NAKLApp: App {
 
   var body: some Scene {
     MenuBarExtra(
-      "NAKL",
+      "ViGo",
       systemImage: menuBarIcon
     ) {
       StatusMenu(
@@ -189,7 +189,7 @@ private struct StatusMenu: View {
 
     Divider()
 
-    Button("Thoát NAKL") {
+    Button("Thoát ViGo") {
       NSApp.terminate(nil)
     }
     .keyboardShortcut("q")

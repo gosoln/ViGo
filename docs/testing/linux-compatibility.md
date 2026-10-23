@@ -1,13 +1,13 @@
 # Linux Compatibility Matrix
 
-Record only NAKL test phrases. Never capture unrelated Keystroke Content. A compile or fake-client
+Record only ViGo test phrases. Never capture unrelated Keystroke Content. A compile or fake-client
 PASS is not evidence for a desktop/client row.
 
 | ID | Gate | Required evidence | Status |
 | --- | --- | --- | --- |
 | L1 | Ubuntu 24.04 x86_64 build | IBus 1.5.29 and Fcitx5 5.1.7 compile with warnings denied | PASS |
 | L2 | Shared adapter contract | R1–R6, VNI, expansion, reset, Delete→Commit, stale-caret rejection, no preedit API | PASS |
-| L3 | Debian packages | Separate `nakl-ibus`/`nakl-fcitx5` packages inspect, install, and uninstall cleanly | PASS |
+| L3 | Debian packages | Separate `vigo-ibus`/`vigo-fcitx5` packages inspect, install, and uninstall cleanly | PASS |
 | L4 | Fedora 44 x86_64 build/RPM | Native compile, contract tests, RPM inspection/install/uninstall | PASS |
 | L5 | IBus GNOME Wayland | GTK3/GTK4/Electron, R1–R6, no underline, suggestions retained | BLOCKED |
 | L6 | IBus X11 | GTK3/GTK4/Electron, R1–R6 | BLOCKED |
@@ -18,7 +18,7 @@ PASS is not evidence for a desktop/client row.
 | L11 | Lifecycle | Clean install, upgrade, rollback, uninstall, login activation | BLOCKED |
 | L12 | Performance/privacy | Core p99 <1 ms; no key content in files, logs, or network | PARTIAL |
 
-Run `cargo test -p nakl-core --release --test performance -- --ignored --nocapture` for the core
+Run `cargo test -p vigo-core --release --test performance -- --ignored --nocapture` for the core
 latency gate. IBus direct-Wayland clients require IBus 1.5.34+ validation because upstream added
 delete-surrounding and input-purpose wiring after Ubuntu 24.04's baseline.
 

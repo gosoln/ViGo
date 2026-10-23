@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 template <typename Interface> class ComPtr final
@@ -60,4 +60,4 @@ template <typename Interface> class ComPtr final
     Interface *pointer_ = nullptr;
 };
 
-} // namespace nakl::windows
+} // namespace vigo::windows

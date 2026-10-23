@@ -4,7 +4,7 @@
 
 #include <msctf.h>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 // Applies exactly one core replacement inside the TSF context's synchronous
@@ -12,4 +12,4 @@ namespace nakl::windows
 [[nodiscard]] HRESULT ApplyEditAction(ITfContext *context, TfClientId client_id,
                                       const EditAction &action);
 
-} // namespace nakl::windows
+} // namespace vigo::windows

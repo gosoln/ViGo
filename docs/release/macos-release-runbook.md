@@ -1,6 +1,6 @@
 # macOS Release Runbook
 
-Runbook này mô tả cách tạo, ký, notarize và kiểm thử một bản NAKL `.pkg` phát hành ngoài Mac App Store. Thực hiện từ repository sạch trên máy macOS có Xcode và quyền Apple Developer phù hợp. Không đưa certificate, private key, Apple ID, app-specific password hoặc notary credential vào repository.
+Runbook này mô tả cách tạo, ký, notarize và kiểm thử một bản ViGo `.pkg` phát hành ngoài Mac App Store. Thực hiện từ repository sạch trên máy macOS có Xcode và quyền Apple Developer phù hợp. Không đưa certificate, private key, Apple ID, app-specific password hoặc notary credential vào repository.
 
 ## Trạng thái hiện tại
 
@@ -33,7 +33,7 @@ Tạo hai certificate trong Apple Developer → Certificates, Identifiers & Prof
 Lưu notary credential vào Keychain; không truyền password trực tiếp trên command line. Lệnh sau sẽ hỏi app-specific password bằng secure prompt:
 
 ```sh
-xcrun notarytool store-credentials NAKL-notary \
+xcrun notarytool store-credentials ViGo-notary \
   --apple-id "APPLE_ID" \
   --team-id "TEAM_ID"
 ```
@@ -53,7 +53,7 @@ swift format lint --recursive --strict \
   platform/macos/Sources platform/macos/Tests
 ```
 
-Cập nhật `CFBundleShortVersionString` trong `platform/macos/Resources/Info.plist` và commit thay đổi version trước khi build. Chọn `NAKL_BUILD_NUMBER` dạng số thập phân, lớn hơn mọi build đã phát hành. Luôn đặt biến này rõ ràng cho release; không dựa vào số lượng Git commit vì lịch sử có thể được rebase.
+Cập nhật `CFBundleShortVersionString` trong `platform/macos/Resources/Info.plist` và commit thay đổi version trước khi build. Chọn `VIGO_BUILD_NUMBER` dạng số thập phân, lớn hơn mọi build đã phát hành. Luôn đặt biến này rõ ràng cho release; không dựa vào số lượng Git commit vì lịch sử có thể được rebase.
 
 Chạy corpus, property tests và fuzz campaign phù hợp với release gate. Mọi khác biệt hành vi phải được review trong `tests/golden/` trước khi phát hành.
 
@@ -62,21 +62,21 @@ Chạy corpus, property tests và fuzz campaign phù hợp với release gate. M
 Điền chính xác tên identity hiển thị bởi Keychain:
 
 ```sh
-export NAKL_BUILD_NUMBER="REPLACE_WITH_MONOTONIC_NUMBER"
-export NAKL_CODESIGN_IDENTITY="Developer ID Application: NAME (TEAM_ID)"
-export NAKL_INSTALLER_IDENTITY="Developer ID Installer: NAME (TEAM_ID)"
-export NAKL_NOTARY_PROFILE="NAKL-notary"
+export VIGO_BUILD_NUMBER="REPLACE_WITH_MONOTONIC_NUMBER"
+export VIGO_CODESIGN_IDENTITY="Developer ID Application: NAME (TEAM_ID)"
+export VIGO_INSTALLER_IDENTITY="Developer ID Installer: NAME (TEAM_ID)"
+export VIGO_NOTARY_PROFILE="ViGo-notary"
 
 platform/macos/scripts/package-app.sh
 ```
 
-Artifact được tạo tại `dist/NAKL-<version>-<build>.pkg`; app nguồn nằm tại `build/NAKL.app`. Script bật Hardened Runtime, yêu cầu secure timestamp và từ chối tạo signed package nếu app không dùng Developer ID Application.
+Artifact được tạo tại `dist/ViGo-<version>-<build>.pkg`; app nguồn nằm tại `build/ViGo.app`. Script bật Hardened Runtime, yêu cầu secure timestamp và từ chối tạo signed package nếu app không dùng Developer ID Application.
 
 Đặt đường dẫn artifact cho các bước sau:
 
 ```sh
-export NAKL_APP_PATH="build/NAKL.app"
-export NAKL_PACKAGE_PATH="dist/NAKL-<version>-<build>.pkg"
+export VIGO_APP_PATH="build/ViGo.app"
+export VIGO_PACKAGE_PATH="dist/ViGo-<version>-<build>.pkg"
 ```
 
 ## 4. Structural verification và notarization
@@ -85,7 +85,7 @@ Kiểm tra payload trước khi gửi Apple:
 
 ```sh
 platform/macos/scripts/verify-package-structure.sh \
-  "$NAKL_APP_PATH" "$NAKL_PACKAGE_PATH"
+  "$VIGO_APP_PATH" "$VIGO_PACKAGE_PATH"
 ```
 
 Gate này xác nhận arm64/x86_64, macOS 13 deployment target, bundle/package identifiers, version, payload giống app nguồn, system-wide install domain và logout requirement.
@@ -93,9 +93,9 @@ Gate này xác nhận arm64/x86_64, macOS 13 deployment target, bundle/package i
 Gửi package tới Apple, lưu submission result/log dưới `dist/notarization/`, staple ticket và chạy Gatekeeper:
 
 ```sh
-platform/macos/scripts/notarize.sh "$NAKL_PACKAGE_PATH"
+platform/macos/scripts/notarize.sh "$VIGO_PACKAGE_PATH"
 platform/macos/scripts/verify-release.sh \
-  "$NAKL_APP_PATH" "$NAKL_PACKAGE_PATH"
+  "$VIGO_APP_PATH" "$VIGO_PACKAGE_PATH"
 ```
 
 Không phát hành nếu `notarytool`, `stapler`, `codesign`, `pkgutil` hoặc `spctl` thất bại. Xem JSON log trong `dist/notarization/` để xử lý lỗi notarization.
@@ -104,21 +104,21 @@ Không phát hành nếu `notarytool`, `stapler`, `codesign`, `pkgutil` hoặc `
 
 Dùng máy ảo hoặc tài khoản macOS dùng riêng cho QA; chỉ tạo dữ liệu gõ tắt tổng hợp. Kiểm tra lần lượt:
 
-1. Clean install: `sudo installer -pkg "$NAKL_PACKAGE_PATH" -target /`, sau đó logout/login.
-2. Xác nhận bundle tại `/Library/Input Methods/NAKL.app`, receipt `com.nakl.inputmethod.NAKL.pkg`, menu-bar UI và Accessibility authorization.
+1. Clean install: `sudo installer -pkg "$VIGO_PACKAGE_PATH" -target /`, sau đó logout/login.
+2. Xác nhận bundle tại `/Library/Input Methods/ViGo.app`, receipt `com.gosoln.inputmethod.ViGo.pkg`, menu-bar UI và Accessibility authorization.
 3. Chạy matrix trong `docs/testing/macos-compatibility.md`: Telex, VNI, `giai+r`, `cha+f`, không underline trong Chrome, secure pass-through, gõ tắt, hotkeys và excluded apps.
 4. Upgrade từ bản đã phát hành trước; xác nhận settings tổng hợp được giữ nguyên.
 5. Thử rollback/recovery khi upgrade thất bại; không làm mất bundle đang hoạt động hoặc preferences.
 6. Tắt launch-at-login, logout để dừng input method, rồi chạy `platform/macos/scripts/uninstall-system.sh`. Xác nhận ABC được khôi phục, receipt bị quên và recovery bundle được giữ lại.
 
-Lưu ý: `smoke-installed.sh` hiện kiểm tra bản user-local tại `~/Library/Input Methods/NAKL.app`. Không dùng kết quả đó để chứng nhận package system-wide; cần chạy matrix trên `/Library/Input Methods/NAKL.app` hoặc cập nhật smoke script trước release.
+Lưu ý: `smoke-installed.sh` hiện kiểm tra bản user-local tại `~/Library/Input Methods/ViGo.app`. Không dùng kết quả đó để chứng nhận package system-wide; cần chạy matrix trên `/Library/Input Methods/ViGo.app` hoặc cập nhật smoke script trước release.
 
 ## 6. Hoàn tất artifact
 
 Tạo checksum và ghi lại commit, version, build, macOS/Xcode version, kiến trúc, notary submission ID và kết quả compatibility matrix:
 
 ```sh
-shasum -a 256 "$NAKL_PACKAGE_PATH" > "$NAKL_PACKAGE_PATH.sha256"
+shasum -a 256 "$VIGO_PACKAGE_PATH" > "$VIGO_PACKAGE_PATH.sha256"
 ```
 
 Chỉ tag release sau khi mọi gate đều PASS. Giữ `.pkg`, checksum và notarization log trong release storage; `build/`, `dist/` và credentials không được commit. Không ghi keystroke thật, secure-field content hoặc dữ liệu gõ tắt của người dùng vào log.

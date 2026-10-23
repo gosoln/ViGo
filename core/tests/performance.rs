@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use nakl_core::{CompositionSession, InputEvent, TypingMethod};
+use vigo_core::{CompositionSession, InputEvent, TypingMethod};
 
 #[test]
 #[ignore = "release gate; run with --release on a quiet native runner"]

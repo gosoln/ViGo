@@ -16,4 +16,4 @@ For R2, the tone event must replace the two committed scalars `ai` with `ải`; 
 For R6, the second `r` restores `vè` to literal `ver`. All later modifier keys remain literal until
 the next word boundary; the following word must compose normally.
 
-Run R1–R6 in each platform's fake-client contract tests and in a Chromium address bar plus one native editor. Where the adapter uses committed-input mode, verify that typing has no marked-text underline and that client suggestions remain available. Record the OS, adapter, client version, architecture, NAKL commit, and PASS/FAIL/BLOCKED without capturing unrelated user text.
+Run R1–R6 in each platform's fake-client contract tests and in a Chromium address bar plus one native editor. Where the adapter uses committed-input mode, verify that typing has no marked-text underline and that client suggestions remain available. Record the OS, adapter, client version, architecture, ViGo commit, and PASS/FAIL/BLOCKED without capturing unrelated user text.

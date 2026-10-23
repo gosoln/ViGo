@@ -10,14 +10,14 @@
 #include <utility>
 #include <vector>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 namespace
 {
 
-constexpr wchar_t SettingsPath[] = L"Software\\NAKL";
+constexpr wchar_t SettingsPath[] = L"Software\\ViGo";
 constexpr wchar_t RunPath[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-constexpr wchar_t RunValue[] = L"NAKL";
+constexpr wchar_t RunValue[] = L"ViGo";
 constexpr std::size_t MaxSettingsBytes = 1024 * 1024;
 constexpr std::size_t MaxExpansionCount = 256;
 constexpr std::size_t MaxExcludedCount = 256;
@@ -442,4 +442,4 @@ bool SetLaunchAtLogin(bool enabled, std::wstring_view executable_path) noexcept
     }
 }
 
-} // namespace nakl::windows
+} // namespace vigo::windows

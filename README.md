@@ -1,7 +1,7 @@
-NAKL - Yet another Vietnamese input keyboard for Mac OS
+ViGo - Vietnamese input method for macOS, Windows, and Linux
 =======
 
-NAKL 2.0 uses a deterministic Rust composition core through a versioned C ABI. Native adapters now
+ViGo (formerly NAKL 2.0) is derived from [NAKL](https://github.com/huyphan/NAKL) by Huy Phan. It uses a deterministic Rust composition core through a versioned C ABI. Native adapters now
 live under `platform/macos/`, `platform/windows/`, and `platform/linux/` (IBus plus Fcitx5); the
 original macOS app remains frozen under `legacy/macos-hook/` as a behavioral oracle.
 
@@ -11,15 +11,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo +nightly fuzz run composition --fuzz-dir fuzz -- -max_total_time=10
 make -C legacy/oracle
 swift build --package-path platform/macos
-cargo build -p nakl-core --release
+cargo build -p vigo-core --release
 cmake -S platform/linux -B build/linux -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_BUILD_TYPE=Release \
-  -DNAKL_BUILD_IBUS=ON -DNAKL_BUILD_FCITX5=ON
+  -DVIGO_BUILD_IBUS=ON -DVIGO_BUILD_FCITX5=ON
 ```
 
-See [the modernization plan](docs/modernization-plan.md), [platform evaluation](docs/research/cross-platform-input-method-platform-evaluation.md), and [architecture decisions](docs/adr/) before contributing to NAKL 2.0.
+See [the modernization plan](docs/modernization-plan.md), [platform evaluation](docs/research/cross-platform-input-method-platform-evaluation.md), and [architecture decisions](docs/adr/) before contributing to ViGo.
 
-* Please visit [homepage](http://huyphan.github.com/NAKL) of this project.
+* The original project homepage is [huyphan.github.com/NAKL](http://huyphan.github.com/NAKL).
 
 Contributing
 =======

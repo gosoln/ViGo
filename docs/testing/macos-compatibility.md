@@ -1,10 +1,10 @@
 # macOS Compatibility Matrix
 
-Use only the synthetic strings below in fresh, unsaved documents. Record the test ID, PASS/FAIL/BLOCKED, application version, macOS build, and NAKL commit. Never record arbitrary typed text, secure-field contents, Console logs, or network traces.
+Use only the synthetic strings below in fresh, unsaved documents. Record the test ID, PASS/FAIL/BLOCKED, application version, macOS build, and ViGo commit. Never record arbitrary typed text, secure-field contents, Console logs, or network traces.
 
 ## Activation Preflight
 
-After the first local install, log out and back in. Keep `/Applications/NAKL.app` (legacy 0.2) closed, then run:
+After the first local install, log out and back in. Keep `/Applications/ViGo.app` (legacy 0.2) closed, then run:
 
 ```sh
 platform/macos/scripts/smoke-installed.sh
@@ -15,12 +15,12 @@ The smoke tests keep ABC selected, validate the committed-input regressions `gia
 
 ```sh
 platform/macos/scripts/input-source-tool.swift select
-swift run --package-path platform/macos NAKLCompatibilityFixture
+swift run --package-path platform/macos ViGoCompatibilityFixture
 ```
 
 Restore ABC immediately after testing with `platform/macos/scripts/input-source-tool.swift restore-abc`.
 
-For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC selected, and run the shared cases in [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md). Do not select the NAKL InputMethodKit source for those cases.
+For committed-input compatibility, launch ViGo, grant Accessibility, keep ABC selected, and run the shared cases in [Cross-Platform Composition Regressions](./cross-platform-composition-regressions.md). Do not select the ViGo InputMethodKit source for those cases.
 
 ## Required Cases
 
@@ -36,7 +36,7 @@ For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC se
 | C8 | In `LtestR`, select only `test`, then type `as` | `LáR`; surrounding text is preserved |
 | C9 | `a`, Command+A, Right Arrow, `s` | Literal `as`; stale composition is not reused |
 | C10 | Type `a` in field A, focus field B, type `s` | A is `a`; B is `s` |
-| C11 | Disable NAKL, type `tieengs`, then re-enable | Literal while disabled; C1 after re-enable |
+| C11 | Disable ViGo, type `tieengs`, then re-enable | Literal while disabled; C1 after re-enable |
 | C12 | Type `tieengs` in a secure field | Seven raw characters; no crash or replacement |
 | C13 | With ABC selected, Telex `giai`, then `r` | `giải`; never `giaỉ` |
 | C14 | With ABC selected, Telex `cha`, then `f` | `chà`; never `chaà` |
@@ -44,9 +44,9 @@ For committed-input compatibility, launch NAKL, grant Accessibility, keep ABC se
 | C16 | Choose “Tắt trong Google Chrome”, type `tieengs`, then re-enable | Literal while excluded; C1 after re-enable |
 | C17 | Record global hot keys, trigger each from Chrome, then clear them | Toggle changes enabled state; switch alternates Telex/VNI; keys do not enter Chrome |
 | C18 | With ABC selected, Telex `v e r r s i o n` | `version`; after the second `r`, later tone keys stay literal until the word ends |
-| C19 | With another app in front, choose “Tùy chọn…” from the NAKL menu | The settings window opens and becomes visible in front of the current app |
-| C20 | Switch Finder → Chrome → TextEdit, opening the NAKL menu after each switch | The exclusion action names the current app every time; it never retains the previous app |
-| C21 | Complete a local install or upgrade, then inspect the current macOS input source | ABC remains selected and NAKL runs from the menu bar; normal typing has no marked-text underline |
+| C19 | With another app in front, choose “Tùy chọn…” from the ViGo menu | The settings window opens and becomes visible in front of the current app |
+| C20 | Switch Finder → Chrome → TextEdit, opening the ViGo menu after each switch | The exclusion action names the current app every time; it never retains the previous app |
+| C21 | Complete a local install or upgrade, then inspect the current macOS input source | ABC remains selected and ViGo runs from the menu bar; normal typing has no marked-text underline |
 
 Run C1–C12 in the AppKit fixture first, switching the global typing method when its section requests it. Repeat C12 and run C13–C21 through committed-input compatibility with ABC selected. A green mark requires both the expected text and NFC. Then cover TextEdit, Chrome, VS Code, PhpStorm, and Word; repeat C1, C5, C7, C10, C12, C13, C14, C18, C19, and C20 in each applicable client. Use local/offline fields in browser and Electron clients, and discard documents without saving.
 

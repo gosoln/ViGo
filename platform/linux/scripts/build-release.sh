@@ -7,13 +7,13 @@ build_dir=${1:-"$repository_dir/build/linux-release"}
 package_dir=${2:-"$repository_dir/dist/linux"}
 
 cd "$repository_dir"
-cargo build -p nakl-core --release
+cargo build -p vigo-core --release
 cmake -S platform/linux -B "$build_dir" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DNAKL_CORE_LIBRARY="$repository_dir/target/release/libnakl_core.a" \
-    -DNAKL_BUILD_IBUS=ON \
-    -DNAKL_BUILD_FCITX5=ON \
+    -DVIGO_CORE_LIBRARY="$repository_dir/target/release/libvigo_core.a" \
+    -DVIGO_BUILD_IBUS=ON \
+    -DVIGO_BUILD_FCITX5=ON \
     -DBUILD_TESTING=ON
 cmake --build "$build_dir"
 ctest --test-dir "$build_dir" --output-on-failure

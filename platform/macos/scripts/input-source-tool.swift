@@ -2,7 +2,7 @@
 import Carbon
 import Foundation
 
-private let defaultIdentifier = "com.nakl.inputmethod.NAKL"
+private let defaultIdentifier = "com.gosoln.inputmethod.ViGo"
 
 private func property(_ source: TISInputSource, _ key: CFString) -> AnyObject? {
   guard let pointer = TISGetInputSourceProperty(source, key) else { return nil }

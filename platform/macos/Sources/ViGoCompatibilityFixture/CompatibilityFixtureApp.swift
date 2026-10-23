@@ -10,11 +10,11 @@ private final class FixtureAppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct NAKLCompatibilityFixtureApp: App {
+struct ViGoCompatibilityFixtureApp: App {
   @NSApplicationDelegateAdaptor(FixtureAppDelegate.self) private var appDelegate
 
   var body: some Scene {
-    WindowGroup("NAKL Compatibility Fixture") {
+    WindowGroup("ViGo Compatibility Fixture") {
       CompatibilityFixtureView()
         .frame(width: 620, height: 520)
     }
@@ -78,7 +78,7 @@ private struct CompatibilityFixtureView: View {
       }
 
       Section("Disabled mode") {
-        TextField("Disable NAKL, then type tieengs", text: $disabled)
+        TextField("Disable ViGo, then type tieengs", text: $disabled)
         StatusMark(passed: disabled == "tieengs")
       }
 

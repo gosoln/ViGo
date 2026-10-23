@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 namespace
 {
@@ -258,4 +258,4 @@ HRESULT ApplyEditAction(ITfContext *context, TfClientId client_id, const EditAct
     return FAILED(request_result) ? request_result : session_result;
 }
 
-} // namespace nakl::windows
+} // namespace vigo::windows

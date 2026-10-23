@@ -2,9 +2,9 @@
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-INSTALLED_APP="$HOME/Library/Input Methods/NAKL.app"
-INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/NAKL"
-EXPECTED_BUNDLE_ID="com.nakl.inputmethod.NAKL"
+INSTALLED_APP="$HOME/Library/Input Methods/ViGo.app"
+INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/ViGo"
+EXPECTED_BUNDLE_ID="com.gosoln.inputmethod.ViGo"
 
 restore_committed_source() {
     if ! "$SCRIPT_DIR/input-source-tool.swift" restore-abc >/dev/null 2>&1; then
@@ -14,7 +14,7 @@ restore_committed_source() {
 trap restore_committed_source EXIT HUP INT TERM
 
 if [ ! -d "$INSTALLED_APP" ]; then
-    echo "Install NAKL locally before running the smoke test." >&2
+    echo "Install ViGo locally before running the smoke test." >&2
     exit 1
 fi
 BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" \
@@ -28,26 +28,26 @@ codesign --verify --deep --strict "$INSTALLED_APP"
 METHOD=$(defaults read "$EXPECTED_BUNDLE_ID" input.method 2>/dev/null || echo telex)
 ENABLED=$(defaults read "$EXPECTED_BUNDLE_ID" input.enabled 2>/dev/null || echo 1)
 if [ "$METHOD" != "telex" ] || [ "$ENABLED" = "0" ]; then
-    echo "Select Telex and enable NAKL before running the smoke test." >&2
+    echo "Select Telex and enable ViGo before running the smoke test." >&2
     exit 1
 fi
 
 open "$INSTALLED_APP"
-NAKL_PID=""
+VIGO_PID=""
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-    NAKL_PID=$(ps -axo pid=,command= | awk -v command="$INSTALLED_EXECUTABLE" '
+    VIGO_PID=$(ps -axo pid=,command= | awk -v command="$INSTALLED_EXECUTABLE" '
         { pid = $1; $1 = ""; sub(/^ /, "", $0); if ($0 == command) { print pid; exit } }
     ')
-    [ -n "$NAKL_PID" ] && break
+    [ -n "$VIGO_PID" ] && break
     sleep 0.2
 done
-if [ -z "$NAKL_PID" ]; then
-    echo "Installed NAKL did not launch." >&2
+if [ -z "$VIGO_PID" ]; then
+    echo "Installed ViGo did not launch." >&2
     exit 1
 fi
 sleep 1
-if ! kill -0 "$NAKL_PID" 2>/dev/null; then
-    echo "Installed NAKL terminated during IMKServer startup." >&2
+if ! kill -0 "$VIGO_PID" 2>/dev/null; then
+    echo "Installed ViGo terminated during IMKServer startup." >&2
     exit 1
 fi
 
@@ -98,9 +98,9 @@ case "$RESULT" in
         exit 1
         ;;
 esac
-if ! kill -0 "$NAKL_PID" 2>/dev/null; then
-    echo "Installed NAKL terminated while handling input." >&2
+if ! kill -0 "$VIGO_PID" 2>/dev/null; then
+    echo "Installed ViGo terminated while handling input." >&2
     exit 1
 fi
 
-echo "PASS: installed NAKL composed committed Telex input in TextEdit without duplication."
+echo "PASS: installed ViGo composed committed Telex input in TextEdit without duplication."

@@ -3,9 +3,9 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SCRIPT_PATH="$SCRIPT_DIR/$(basename -- "$0")"
-INSTALLED_APP="/Library/Input Methods/NAKL.app"
-EXPECTED_BUNDLE_ID="com.nakl.inputmethod.NAKL"
-RECEIPT_ID="com.nakl.inputmethod.NAKL.pkg"
+INSTALLED_APP="/Library/Input Methods/ViGo.app"
+EXPECTED_BUNDLE_ID="com.gosoln.inputmethod.ViGo"
+RECEIPT_ID="com.gosoln.inputmethod.ViGo.pkg"
 
 if [ "$(id -u)" -ne 0 ]; then
     CURRENT_SOURCE=$("$SCRIPT_DIR/input-source-tool.swift" current)
@@ -21,7 +21,7 @@ if [ "${1:-}" != "--root-phase" ]; then
     exit 64
 fi
 if [ ! -e "$INSTALLED_APP" ]; then
-    echo "NAKL is not installed at $INSTALLED_APP"
+    echo "ViGo is not installed at $INSTALLED_APP"
     pkgutil --forget "$RECEIPT_ID" >/dev/null 2>&1 || true
     exit 0
 fi
@@ -33,13 +33,13 @@ if [ "$BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]; then
     exit 1
 fi
 
-INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/NAKL"
+INSTALLED_EXECUTABLE="$INSTALLED_APP/Contents/MacOS/ViGo"
 if ps -axo command= | grep -Fx "$INSTALLED_EXECUTABLE" >/dev/null; then
-    echo "Log out to stop NAKL before uninstalling it." >&2
+    echo "Log out to stop ViGo before uninstalling it." >&2
     exit 1
 fi
 
-RECOVERY_APP="/Users/Shared/NAKL-Uninstalled-$(date +%Y%m%d-%H%M%S)-$$.app"
+RECOVERY_APP="/Users/Shared/ViGo-Uninstalled-$(date +%Y%m%d-%H%M%S)-$$.app"
 if [ -e "$RECOVERY_APP" ]; then
     echo "Refusing to overwrite recovery bundle: $RECOVERY_APP" >&2
     exit 1
@@ -50,5 +50,5 @@ if ! pkgutil --forget "$RECEIPT_ID"; then
     exit 1
 fi
 
-echo "Moved NAKL to $RECOVERY_APP; preferences were preserved."
+echo "Moved ViGo to $RECOVERY_APP; preferences were preserved."
 echo "Log out and back in to refresh the input-source menu."

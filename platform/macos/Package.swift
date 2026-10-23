@@ -6,34 +6,34 @@ import PackageDescription
 let packageDirectory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let repositoryDirectory = packageDirectory.deletingLastPathComponent().deletingLastPathComponent()
 let defaultCoreLibrary = repositoryDirectory
-    .appendingPathComponent("target/debug/libnakl_core.a").path
-let coreLibrary = ProcessInfo.processInfo.environment["NAKL_CORE_LIBRARY"] ?? defaultCoreLibrary
+    .appendingPathComponent("target/debug/libvigo_core.a").path
+let coreLibrary = ProcessInfo.processInfo.environment["VIGO_CORE_LIBRARY"] ?? defaultCoreLibrary
 
 let package = Package(
-    name: "NAKLMac",
+    name: "ViGoMac",
     platforms: [.macOS(.v13)],
     products: [
-        .executable(name: "NAKL", targets: ["NAKL"]),
+        .executable(name: "ViGo", targets: ["ViGo"]),
         .executable(
-            name: "NAKLCompatibilityFixture",
-            targets: ["NAKLCompatibilityFixture"]
+            name: "ViGoCompatibilityFixture",
+            targets: ["ViGoCompatibilityFixture"]
         ),
     ],
     targets: [
         .target(
-            name: "NAKLCoreBridge",
+            name: "ViGoCoreBridge",
             publicHeadersPath: "include"
         ),
         .executableTarget(
-            name: "NAKL",
-            dependencies: ["NAKLCoreBridge"],
+            name: "ViGo",
+            dependencies: ["ViGoCoreBridge"],
             linkerSettings: [
                 .linkedFramework("Carbon"),
                 .linkedFramework("InputMethodKit"),
                 .unsafeFlags([coreLibrary]),
             ]
         ),
-        .executableTarget(name: "NAKLCompatibilityFixture"),
-        .testTarget(name: "NAKLTests", dependencies: ["NAKL"]),
+        .executableTarget(name: "ViGoCompatibilityFixture"),
+        .testTarget(name: "ViGoTests", dependencies: ["ViGo"]),
     ]
 )

@@ -2,10 +2,10 @@
 
 #include <windows.h>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 [[nodiscard]] HRESULT RegisterTextService();
 [[nodiscard]] HRESULT UnregisterTextService();
 
-} // namespace nakl::windows
+} // namespace vigo::windows

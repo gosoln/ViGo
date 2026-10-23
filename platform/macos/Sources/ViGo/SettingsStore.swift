@@ -4,7 +4,7 @@ import Foundation
 import ServiceManagement
 
 extension Notification.Name {
-  static let naklSettingsDidChange = Notification.Name("NAKLSettingsDidChange")
+  static let vigoSettingsDidChange = Notification.Name("ViGoSettingsDidChange")
 }
 
 enum SettingsKey {
@@ -269,6 +269,6 @@ final class SettingsStore: ObservableObject {
   }
 
   private func notifySettingsChanged() {
-    NotificationCenter.default.post(name: .naklSettingsDidChange, object: nil)
+    NotificationCenter.default.post(name: .vigoSettingsDidChange, object: nil)
   }
 }

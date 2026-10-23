@@ -1,13 +1,13 @@
 import Foundation
 import Testing
 
-@testable import NAKL
+@testable import ViGo
 
-@Test("Active application follows foreground changes and ignores NAKL itself")
+@Test("Active application follows foreground changes and ignores ViGo itself")
 @MainActor
 func activeApplicationFollowsForegroundChanges() {
   let monitor = ActiveApplicationMonitor(
-    ownBundleIdentifier: "com.nakl.inputmethod.NAKL",
+    ownBundleIdentifier: "com.gosoln.inputmethod.ViGo",
     observeWorkspace: false
   )
 
@@ -24,13 +24,13 @@ func activeApplicationFollowsForegroundChanges() {
   #expect(monitor.activeApplication?.displayName == "Google Chrome")
 
   monitor.recordActivation(
-    bundleIdentifier: "com.nakl.inputmethod.NAKL",
-    displayName: "NAKL"
+    bundleIdentifier: "com.gosoln.inputmethod.ViGo",
+    displayName: "ViGo"
   )
   #expect(monitor.activeApplication?.displayName == "Google Chrome")
 }
 
-@Test("Settings menu opens its window and activates NAKL")
+@Test("Settings menu opens its window and activates ViGo")
 @MainActor
 func settingsMenuOpensAndActivatesApplication() {
   var events: [String] = []

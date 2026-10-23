@@ -2,7 +2,7 @@
 
 #include "surrounding_tracker.h"
 
-namespace nakl::linux
+namespace vigo::linux
 {
 namespace
 {
@@ -42,4 +42,4 @@ bool ApplyTrackedCommittedEdit(CommittedTextClient &client, SurroundingTracker &
     return true;
 }
 
-} // namespace nakl::linux
+} // namespace vigo::linux

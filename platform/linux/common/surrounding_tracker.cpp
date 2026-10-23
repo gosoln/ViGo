@@ -2,7 +2,7 @@
 
 #include <limits>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 namespace
 {
@@ -271,4 +271,4 @@ bool SurroundingTracker::ExpectReplacement(const EditAction &action)
     return true;
 }
 
-} // namespace nakl::linux
+} // namespace vigo::linux

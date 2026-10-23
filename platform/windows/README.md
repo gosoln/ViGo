@@ -1,4 +1,4 @@
-# NAKL for Windows
+# ViGo for Windows
 
 This directory contains the Windows 11 x64 Text Services Framework adapter. The deep `CompositionSession` module hides UTF-8/UTF-16 conversion and the Rust C ABI behind `Process` and `Preview`; the TSF implementation owns COM lifetime, focus identity, secure-mode pass-through, key normalization, synchronous edit sessions, and profile registration.
 
@@ -10,9 +10,9 @@ The first M2 slice provides:
 - Vietnamese language-profile/category registration without setting a default IME;
 - one active composition session per focused TSF context;
 - runtime Telex/VNI/disabled snapshots, text expansions, and executable exclusions stored under
-  `HKCU\Software\NAKL`;
+  `HKCU\Software\ViGo`;
 - Telex/VNI key processing, secure-mode pass-through, and ordered committed replacements;
-- a separate `NAKLSettings.exe` tray/settings process with configurable global hot keys and
+- a separate `ViGoSettings.exe` tray/settings process with configurable global hot keys and
   General, Text Expansion, and About tabs;
 - fake-editor contract coverage for shared regressions R1–R6 plus Text Expansion.
 
@@ -25,14 +25,14 @@ settings.
 Use a Visual Studio Developer PowerShell from the repository root:
 
 ```powershell
-cargo build -p nakl-core
+cargo build -p vigo-core
 cmake -S platform/windows -B build/windows -A x64 -DBUILD_TESTING=ON
 cmake --build build/windows --config Debug
 ctest --test-dir build/windows -C Debug --output-on-failure
 platform/windows/scripts/verify-build.ps1
 ```
 
-The outputs are `build/windows/Debug/NAKLTSF.dll` and `NAKLSettings.exe`. The Rust core is
+The outputs are `build/windows/Debug/ViGoTSF.dll` and `ViGoSettings.exe`. The Rust core is
 statically linked; the TSF key path performs no filesystem, network, UI, telemetry, or logging
 work. Registry settings are copied only at activation/context boundaries.
 
@@ -55,7 +55,7 @@ Windows requires third-party IMEs to be digitally signed. After applying an appr
 
 ```powershell
 platform/windows/scripts/register-local.ps1
-# Sign out/in, enable NAKL under Vietnamese language options, then test.
+# Sign out/in, enable ViGo under Vietnamese language options, then test.
 platform/windows/scripts/unregister-local.ps1
 ```
 

@@ -3,7 +3,7 @@
 #include <atomic>
 #include <vector>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 namespace
 {
@@ -69,4 +69,4 @@ bool CanUnloadModule() noexcept
            lock_count.load(std::memory_order_relaxed) == 0;
 }
 
-} // namespace nakl::windows
+} // namespace vigo::windows

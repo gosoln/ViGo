@@ -9,7 +9,7 @@
 #include <iterator>
 #include <new>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 namespace
 {
@@ -604,4 +604,4 @@ void TextService::ClearContext() noexcept
     context_identity_ = nullptr;
 }
 
-} // namespace nakl::windows
+} // namespace vigo::windows

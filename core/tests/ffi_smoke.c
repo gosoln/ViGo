@@ -1,4 +1,4 @@
-#include "nakl_core.h"
+#include "vigo_core.h"
 
 #include <string.h>
 
@@ -6,63 +6,63 @@ int main(void)
 {
     const uint8_t trigger[] = "btw";
     const uint8_t replacement[] = "by the way";
-    NaklConfig *config = nakl_config_new();
+    VigoConfig *config = vigo_config_new();
     if (config == NULL) {
         return 1;
     }
-    if (nakl_config_add_text_expansion(
+    if (vigo_config_add_text_expansion(
             config,
             trigger,
             sizeof(trigger) - 1,
             replacement,
             sizeof(replacement) - 1
-        ) != NAKL_STATUS_OK) {
-        nakl_config_free(config);
+        ) != VIGO_STATUS_OK) {
+        vigo_config_free(config);
         return 1;
     }
 
-    NaklSession *session = nakl_session_new_with_config(NAKL_METHOD_TELEX, config);
-    nakl_config_free(config);
+    VigoSession *session = vigo_session_new_with_config(VIGO_METHOD_TELEX, config);
+    vigo_config_free(config);
     if (session == NULL) {
         return 1;
     }
-    NaklSession *preview = nakl_session_clone(session);
+    VigoSession *preview = vigo_session_clone(session);
     if (preview == NULL) {
-        nakl_session_free(session);
+        vigo_session_free(session);
         return 1;
     }
-    nakl_session_free(preview);
+    vigo_session_free(preview);
 
-    NaklAction action = {0};
+    VigoAction action = {0};
     const char input[] = "btw ";
-    uint32_t status = NAKL_STATUS_OK;
+    uint32_t status = VIGO_STATUS_OK;
     for (size_t index = 0; index < sizeof(input) - 1; ++index) {
-        status = nakl_session_process(
+        status = vigo_session_process(
             session,
-            NAKL_EVENT_TEXT,
+            VIGO_EVENT_TEXT,
             (uint32_t)input[index],
             &action
         );
-        if (status != NAKL_STATUS_OK) {
-            nakl_session_free(session);
+        if (status != VIGO_STATUS_OK) {
+            vigo_session_free(session);
             return 1;
         }
     }
 
     const uint8_t expected[] = "by the way ";
-    int matches = action.kind == NAKL_ACTION_REPLACE_BEFORE
+    int matches = action.kind == VIGO_ACTION_REPLACE_BEFORE
         && action.delete_scalars == 3
         && action.insert_len == sizeof(expected) - 1
         && memcmp(action.insert_ptr, expected, sizeof(expected) - 1) == 0;
-    status = nakl_session_process(
+    status = vigo_session_process(
         session,
-        NAKL_EVENT_BACKSPACE,
+        VIGO_EVENT_BACKSPACE,
         0,
         &action
     );
     matches = matches
-        && status == NAKL_STATUS_OK
-        && action.kind == NAKL_ACTION_PASS_THROUGH;
-    nakl_session_free(session);
+        && status == VIGO_STATUS_OK
+        && action.kind == VIGO_ACTION_PASS_THROUGH;
+    vigo_session_free(session);
     return matches ? 0 : 1;
 }

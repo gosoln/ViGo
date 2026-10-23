@@ -13,12 +13,12 @@
 #include <string_view>
 #include <vector>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 namespace
 {
 
-constexpr wchar_t WindowClassName[] = L"NAKLSettingsWindow";
+constexpr wchar_t WindowClassName[] = L"ViGoSettingsWindow";
 constexpr UINT TrayMessage = WM_APP + 1;
 constexpr UINT ShowSettingsMessage = WM_APP + 2;
 constexpr UINT TrayId = 1;
@@ -258,12 +258,12 @@ bool Persist(AppState &state, bool refresh_hot_keys = true)
 {
     if (!SaveSettings(state.settings))
     {
-        MessageBoxW(state.window, L"Không thể lưu cài đặt NAKL.", L"NAKL", MB_OK | MB_ICONERROR);
+        MessageBoxW(state.window, L"Không thể lưu cài đặt ViGo.", L"ViGo", MB_OK | MB_ICONERROR);
         return false;
     }
     DWORD_PTR ignored = 0;
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                        reinterpret_cast<LPARAM>(L"Software\\NAKL"), SMTO_ABORTIFHUNG, 100,
+                        reinterpret_cast<LPARAM>(L"Software\\ViGo"), SMTO_ABORTIFHUNG, 100,
                         &ignored);
     if (refresh_hot_keys)
     {
@@ -322,7 +322,7 @@ void AddExpansion(AppState &state)
     if (!trigger_utf8.has_value() || !replacement_utf8.has_value() || trigger_utf8->empty() ||
         replacement_utf8->empty() || shortcut.find_first_of(L"\t \r\n") != std::wstring::npos)
     {
-        MessageBoxW(state.window, L"Phím tắt phải là một từ không chứa khoảng trắng.", L"NAKL",
+        MessageBoxW(state.window, L"Phím tắt phải là một từ không chứa khoảng trắng.", L"ViGo",
                     MB_OK | MB_ICONWARNING);
         return;
     }
@@ -351,7 +351,7 @@ void AddExcludedExecutable(AppState &state)
     std::wstring executable = WindowText(GetDlgItem(state.window, ExcludedEdit));
     if (executable.empty() || executable.find_first_of(L"\\/\t\r\n") != std::wstring::npos)
     {
-        MessageBoxW(state.window, L"Nhập tên file thực thi, ví dụ game.exe.", L"NAKL",
+        MessageBoxW(state.window, L"Nhập tên file thực thi, ví dụ game.exe.", L"ViGo",
                     MB_OK | MB_ICONWARNING);
         return;
     }
@@ -378,7 +378,7 @@ void ApplyHotKeySettings(AppState &state)
         (toggle.modifiers == switch_method.modifiers &&
          toggle.virtual_key == switch_method.virtual_key))
     {
-        MessageBoxW(state.window, L"Hai phím nóng phải hợp lệ và khác nhau.", L"NAKL",
+        MessageBoxW(state.window, L"Hai phím nóng phải hợp lệ và khác nhau.", L"ViGo",
                     MB_OK | MB_ICONWARNING);
         return;
     }
@@ -501,7 +501,7 @@ bool CreateControls(AppState &state)
                L"Gõ tắt được thay thế khi nhấn dấu cách và chỉ lưu cục bộ trên máy.", SS_LEFT, 42,
                336, 520, 22, -1);
 
-    AddControl(state, 2, WC_STATICW, L"NAKL", SS_CENTER, 170, 98, 300, 36, -1);
+    AddControl(state, 2, WC_STATICW, L"ViGo", SS_CENTER, 170, 98, 300, 36, -1);
     AddControl(state, 2, WC_STATICW, L"Phiên bản 2.0 · Windows TSF", SS_CENTER, 120, 145, 400, 24,
                -1);
     AddControl(state, 2, WC_STATICW,
@@ -553,7 +553,7 @@ LRESULT HandleCommand(AppState &state, int identifier)
         if (length == 0 || length >= executable.size() ||
             !SetLaunchAtLogin(enabled, std::wstring_view(executable.data(), length)))
         {
-            MessageBoxW(state.window, L"Không thể thay đổi mục khởi động.", L"NAKL",
+            MessageBoxW(state.window, L"Không thể thay đổi mục khởi động.", L"ViGo",
                         MB_OK | MB_ICONERROR);
             RefreshGeneralControls(state);
         }
@@ -658,13 +658,13 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w_param, LPAR
 }
 
 } // namespace
-} // namespace nakl::windows
+} // namespace vigo::windows
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
 {
-    using namespace nakl::windows;
+    using namespace vigo::windows;
 
-    HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\NAKLSettingsInstance");
+    HANDLE mutex = CreateMutexW(nullptr, TRUE, L"Local\\ViGoSettingsInstance");
     if (mutex == nullptr || GetLastError() == ERROR_ALREADY_EXISTS)
     {
         if (HWND existing = FindWindowW(WindowClassName, nullptr); existing != nullptr)
@@ -698,7 +698,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
     AppState state;
     state.settings = LoadSettings();
     HWND window = CreateWindowExW(
-        0, WindowClassName, L"NAKL", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+        0, WindowClassName, L"ViGo", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 650, 440, nullptr, nullptr, instance, &state);
     if (window == nullptr)
     {
@@ -712,7 +712,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
     state.tray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     state.tray.uCallbackMessage = TrayMessage;
     state.tray.hIcon = window_class.hIcon;
-    wcscpy_s(state.tray.szTip, L"NAKL");
+    wcscpy_s(state.tray.szTip, L"ViGo");
     if (Shell_NotifyIconW(NIM_ADD, &state.tray) == FALSE)
     {
         ShowSettings(state);

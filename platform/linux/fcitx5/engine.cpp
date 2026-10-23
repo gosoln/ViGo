@@ -24,11 +24,11 @@
 namespace
 {
 
-using nakl::linux::CompositionSession;
-using nakl::linux::EditAction;
-using nakl::linux::EventKind;
-using nakl::linux::InputEvent;
-using nakl::linux::TypingMethod;
+using vigo::linux::CompositionSession;
+using vigo::linux::EditAction;
+using vigo::linux::EventKind;
+using vigo::linux::InputEvent;
+using vigo::linux::TypingMethod;
 
 class ContextState final : public fcitx::InputContextProperty
 {
@@ -41,9 +41,9 @@ class ContextState final : public fcitx::InputContextProperty
         session_.reset();
         surrounding_.Clear();
         expansions_.clear();
-        const auto settings = nakl::linux::LoadSettings();
+        const auto settings = vigo::linux::LoadSettings();
         expansions_ = settings.expansions;
-        active_ = settings.enabled && !nakl::linux::IsApplicationExcluded(settings, application);
+        active_ = settings.enabled && !vigo::linux::IsApplicationExcluded(settings, application);
         if (active_)
         {
             static_cast<void>(Ensure(method));
@@ -83,7 +83,7 @@ class ContextState final : public fcitx::InputContextProperty
         }
     }
 
-    [[nodiscard]] nakl::linux::SurroundingTracker &surrounding() noexcept
+    [[nodiscard]] vigo::linux::SurroundingTracker &surrounding() noexcept
     {
         return surrounding_;
     }
@@ -96,16 +96,16 @@ class ContextState final : public fcitx::InputContextProperty
   private:
     TypingMethod method_ = TypingMethod::Telex;
     bool active_ = true;
-    std::vector<nakl::linux::TextExpansion> expansions_;
+    std::vector<vigo::linux::TextExpansion> expansions_;
     std::unique_ptr<CompositionSession> session_;
-    nakl::linux::SurroundingTracker surrounding_;
+    vigo::linux::SurroundingTracker surrounding_;
 };
 
-class FcitxCommittedClient final : public nakl::linux::CommittedTextClient
+class FcitxCommittedClient final : public vigo::linux::CommittedTextClient
 {
   public:
     FcitxCommittedClient(fcitx::InputContext *context,
-                         nakl::linux::SurroundingTracker *surrounding)
+                         vigo::linux::SurroundingTracker *surrounding)
         : context_(context), surrounding_(surrounding)
     {
     }
@@ -135,7 +135,7 @@ class FcitxCommittedClient final : public nakl::linux::CommittedTextClient
 
   private:
     fcitx::InputContext *context_;
-    nakl::linux::SurroundingTracker *surrounding_;
+    vigo::linux::SurroundingTracker *surrounding_;
 };
 
 [[nodiscard]] TypingMethod MethodFor(const fcitx::InputMethodEntry &entry)
@@ -160,13 +160,13 @@ class FcitxCommittedClient final : public nakl::linux::CommittedTextClient
     return key.states().testAny(command_states);
 }
 
-class NaklEngine final : public fcitx::InputMethodEngineV2
+class VigoEngine final : public fcitx::InputMethodEngineV2
 {
   public:
-    explicit NaklEngine(fcitx::Instance *instance)
+    explicit VigoEngine(fcitx::Instance *instance)
         : instance_(instance), factory_([](fcitx::InputContext &) { return new ContextState(); })
     {
-        instance_->inputContextManager().registerProperty("naklCompositionSession", &factory_);
+        instance_->inputContextManager().registerProperty("vigoCompositionSession", &factory_);
         surrounding_watcher_ = instance_->watchEvent(
             fcitx::EventType::InputContextSurroundingTextUpdated,
             fcitx::EventWatcherPhase::Default, [this](fcitx::Event &event) {
@@ -245,7 +245,7 @@ class NaklEngine final : public fcitx::InputMethodEngineV2
                 }
                 return;
             }
-            if (nakl::linux::ApplyTrackedCommittedEdit(client, state->surrounding(), *action))
+            if (vigo::linux::ApplyTrackedCommittedEdit(client, state->surrounding(), *action))
             {
                 event.filterAndAccept();
             }
@@ -287,15 +287,15 @@ class NaklEngine final : public fcitx::InputMethodEngineV2
     std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>> surrounding_watcher_;
 };
 
-class NaklEngineFactory final : public fcitx::AddonFactory
+class VigoEngineFactory final : public fcitx::AddonFactory
 {
   public:
     fcitx::AddonInstance *create(fcitx::AddonManager *manager) override
     {
-        return new NaklEngine(manager->instance());
+        return new VigoEngine(manager->instance());
     }
 };
 
 } // namespace
 
-FCITX_ADDON_FACTORY(NaklEngineFactory)
+FCITX_ADDON_FACTORY(VigoEngineFactory)

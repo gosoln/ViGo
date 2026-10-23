@@ -4,7 +4,7 @@
 
 #include <atomic>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 class ClassFactory final : public IClassFactory
@@ -25,4 +25,4 @@ class ClassFactory final : public IClassFactory
     std::atomic<ULONG> reference_count_{1};
 };
 
-} // namespace nakl::windows
+} // namespace vigo::windows

@@ -25,7 +25,7 @@ Rust callers and tests use this Interface directly. Native platform Adapters use
 
 ## Test Surface
 
-Behavioral, property, fuzz, and FFI tests cross only this seam. Tests may observe returned actions and replay them into a string, but may not inspect buffers, tables, parser phases, or private helpers. The legacy Objective-C engine supplies characterization fixtures; reviewed product fixtures remain the authority for NAKL 2.0 behavior.
+Behavioral, property, fuzz, and FFI tests cross only this seam. Tests may observe returned actions and replay them into a string, but may not inspect buffers, tables, parser phases, or private helpers. The legacy Objective-C engine supplies characterization fixtures; reviewed product fixtures remain the authority for ViGo 2.0 behavior.
 
 ## Outside the Core
 

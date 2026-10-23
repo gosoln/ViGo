@@ -4,8 +4,8 @@
 
 G_BEGIN_DECLS
 
-#define NAKL_TYPE_IBUS_ENGINE (nakl_ibus_engine_get_type())
+#define VIGO_TYPE_IBUS_ENGINE (vigo_ibus_engine_get_type())
 
-GType nakl_ibus_engine_get_type(void);
+GType vigo_ibus_engine_get_type(void);
 
 G_END_DECLS

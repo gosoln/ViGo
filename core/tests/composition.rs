@@ -1,4 +1,4 @@
-use nakl_core::{Action, CompositionSession, InputEvent, SessionConfig, TypingMethod};
+use vigo_core::{Action, CompositionSession, InputEvent, SessionConfig, TypingMethod};
 
 fn compose(method: TypingMethod, input: &str) -> String {
     let mut session = CompositionSession::new(method);

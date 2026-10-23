@@ -11,14 +11,14 @@
 namespace
 {
 
-using nakl::linux::CompositionSession;
-using nakl::linux::CommittedTextClient;
-using nakl::linux::EditAction;
-using nakl::linux::EventKind;
-using nakl::linux::InputEvent;
-using nakl::linux::SurroundingTracker;
-using nakl::linux::TextExpansion;
-using nakl::linux::TypingMethod;
+using vigo::linux::CompositionSession;
+using vigo::linux::CommittedTextClient;
+using vigo::linux::EditAction;
+using vigo::linux::EventKind;
+using vigo::linux::InputEvent;
+using vigo::linux::SurroundingTracker;
+using vigo::linux::TextExpansion;
+using vigo::linux::TypingMethod;
 
 class RecordingClient final : public CommittedTextClient
 {
@@ -198,7 +198,7 @@ int main()
     Expect(expansion_editor.text() == "by the way ", "text expansion contract must apply");
 
     RecordingClient client;
-    Expect(nakl::linux::ApplyCommittedEdit(
+    Expect(vigo::linux::ApplyCommittedEdit(
                client, {.kind = EditAction::Kind::ReplaceBefore,
                         .delete_scalars = 2,
                         .expected_before = "ai",
@@ -208,7 +208,7 @@ int main()
 
     RecordingClient unsupported;
     unsupported.can_delete = false;
-    Expect(!nakl::linux::ApplyCommittedEdit(
+    Expect(!vigo::linux::ApplyCommittedEdit(
                unsupported, {.kind = EditAction::Kind::ReplaceBefore,
                              .delete_scalars = 1,
                              .expected_before = "a",
@@ -247,15 +247,15 @@ int main()
     Expect(first_context.text() == "giải" && second_context.text() == "chà",
            "input contexts must own independent sessions");
 
-    const auto settings = nakl::linux::ParseSettings(
+    const auto settings = vigo::linux::ParseSettings(
         "version=1\nenabled=false\nexpansion=btw\tby the way\nexcluded=code\n");
     Expect(!settings.enabled && settings.expansions.size() == 1,
            "settings parser must create one immutable expansion snapshot");
-    Expect(nakl::linux::IsApplicationExcluded(settings, "code"),
+    Expect(vigo::linux::IsApplicationExcluded(settings, "code"),
            "settings parser must preserve application exclusions");
-    Expect(nakl::linux::IsApplicationExcluded(settings, "gtk3-im:code"),
+    Expect(vigo::linux::IsApplicationExcluded(settings, "gtk3-im:code"),
            "IBus frontend prefixes must not bypass application exclusions");
-    const auto future_settings = nakl::linux::ParseSettings("version=2\nenabled=false\n");
+    const auto future_settings = vigo::linux::ParseSettings("version=2\nenabled=false\n");
     Expect(future_settings.enabled && future_settings.expansions.empty(),
            "unknown settings versions must fail to safe defaults");
 
@@ -281,7 +281,7 @@ int main()
                                  .expected_before = "ai",
                                  .insert = "ải"};
     TrackedRecordingClient tracked_client(tracker);
-    Expect(nakl::linux::ApplyTrackedCommittedEdit(tracked_client, tracker, replacement),
+    Expect(vigo::linux::ApplyTrackedCommittedEdit(tracked_client, tracker, replacement),
            "validated replacement must be predicted and dispatched exactly once");
     Expect(tracked_client.calls == "delete:2;commit:ải;",
            "tracked adapter order must be delete then commit");

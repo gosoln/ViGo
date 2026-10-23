@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 // {027A6B19-4551-46F7-B8FD-FB09AE4135BA}
@@ -22,6 +22,6 @@ inline constexpr GUID kLanguageProfileGuid{
 };
 
 inline constexpr LANGID kVietnameseLanguageId = 0x042A;
-inline constexpr wchar_t kTextServiceDescription[] = L"NAKL Vietnamese";
+inline constexpr wchar_t kTextServiceDescription[] = L"ViGo Vietnamese";
 
-} // namespace nakl::windows
+} // namespace vigo::windows

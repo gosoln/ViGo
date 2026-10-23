@@ -10,7 +10,7 @@
 #include <iterator>
 #include <string>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 namespace
 {
@@ -217,4 +217,4 @@ HRESULT UnregisterTextService()
     return result;
 }
 
-} // namespace nakl::windows
+} // namespace vigo::windows

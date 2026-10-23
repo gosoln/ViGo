@@ -5,8 +5,8 @@ if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <signed-package.pkg>" >&2
     exit 64
 fi
-if [ -z "${NAKL_NOTARY_PROFILE:-}" ]; then
-    echo "Set NAKL_NOTARY_PROFILE to a notarytool keychain profile." >&2
+if [ -z "${VIGO_NOTARY_PROFILE:-}" ]; then
+    echo "Set VIGO_NOTARY_PROFILE to a notarytool keychain profile." >&2
     exit 64
 fi
 
@@ -19,11 +19,11 @@ mkdir -p "$AUDIT_DIR"
 
 pkgutil --check-signature "$PACKAGE_PATH"
 xcrun notarytool submit "$PACKAGE_PATH" \
-    --keychain-profile "$NAKL_NOTARY_PROFILE" \
+    --keychain-profile "$VIGO_NOTARY_PROFILE" \
     --wait --timeout 30m --output-format json > "$RESULT_PATH"
 SUBMISSION_ID=$(plutil -extract id raw -o - "$RESULT_PATH")
 xcrun notarytool log "$SUBMISSION_ID" "$LOG_PATH" \
-    --keychain-profile "$NAKL_NOTARY_PROFILE"
+    --keychain-profile "$VIGO_NOTARY_PROFILE"
 xcrun stapler staple "$PACKAGE_PATH"
 xcrun stapler validate "$PACKAGE_PATH"
 spctl --assess --type install --verbose=2 "$PACKAGE_PATH"

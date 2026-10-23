@@ -8,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 class TextService final : public ITfTextInputProcessorEx,
@@ -63,4 +63,4 @@ class TextService final : public ITfTextInputProcessorEx,
     std::unique_ptr<CompositionSession> session_;
 };
 
-} // namespace nakl::windows
+} // namespace vigo::windows

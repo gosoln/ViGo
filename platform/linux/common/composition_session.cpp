@@ -1,12 +1,12 @@
 #include "composition_session.h"
 
-#include "nakl_core.h"
+#include "vigo_core.h"
 
 #include <new>
 #include <string_view>
 #include <utility>
 
-namespace nakl::linux
+namespace vigo::linux
 {
 namespace
 {
@@ -77,7 +77,7 @@ namespace
     return true;
 }
 
-[[nodiscard]] std::optional<EditAction> ProcessHandle(NaklSession *session, InputEvent event)
+[[nodiscard]] std::optional<EditAction> ProcessHandle(VigoSession *session, InputEvent event)
 {
     const auto scalar = static_cast<std::uint32_t>(event.scalar);
     if (session == nullptr || (event.kind == EventKind::Text &&
@@ -86,18 +86,18 @@ namespace
         return std::nullopt;
     }
 
-    NaklAction core_action{};
+    VigoAction core_action{};
     const std::uint32_t status =
-        nakl_session_process(session, static_cast<std::uint32_t>(event.kind), scalar, &core_action);
-    if (status != NAKL_STATUS_OK)
+        vigo_session_process(session, static_cast<std::uint32_t>(event.kind), scalar, &core_action);
+    if (status != VIGO_STATUS_OK)
     {
         return std::nullopt;
     }
-    if (core_action.kind == NAKL_ACTION_PASS_THROUGH)
+    if (core_action.kind == VIGO_ACTION_PASS_THROUGH)
     {
         return EditAction{};
     }
-    if (core_action.kind != NAKL_ACTION_REPLACE_BEFORE ||
+    if (core_action.kind != VIGO_ACTION_REPLACE_BEFORE ||
         !IsValidUtf8(core_action.insert_ptr, core_action.insert_len))
     {
         return std::nullopt;
@@ -159,7 +159,7 @@ struct CompositionSession::Impl
 {
     Impl(TypingMethod method, const std::vector<TextExpansion> &expansions)
     {
-        NaklConfig *config = nakl_config_new();
+        VigoConfig *config = vigo_config_new();
         if (config == nullptr)
         {
             return;
@@ -168,11 +168,11 @@ struct CompositionSession::Impl
         for (const auto &expansion : expansions)
         {
             if (expansion.trigger.empty() ||
-                nakl_config_add_text_expansion(
+                vigo_config_add_text_expansion(
                     config, reinterpret_cast<const std::uint8_t *>(expansion.trigger.data()),
                     expansion.trigger.size(),
                     reinterpret_cast<const std::uint8_t *>(expansion.replacement.data()),
-                    expansion.replacement.size()) != NAKL_STATUS_OK)
+                    expansion.replacement.size()) != VIGO_STATUS_OK)
             {
                 valid_config = false;
                 break;
@@ -180,17 +180,17 @@ struct CompositionSession::Impl
         }
         if (valid_config)
         {
-            handle = nakl_session_new_with_config(static_cast<std::uint32_t>(method), config);
+            handle = vigo_session_new_with_config(static_cast<std::uint32_t>(method), config);
         }
-        nakl_config_free(config);
+        vigo_config_free(config);
     }
 
     ~Impl()
     {
-        nakl_session_free(handle);
+        vigo_session_free(handle);
     }
 
-    NaklSession *handle = nullptr;
+    VigoSession *handle = nullptr;
     std::string committed_history;
 };
 
@@ -215,13 +215,13 @@ std::optional<EditAction> CompositionSession::Preview(InputEvent event) const
     {
         return std::nullopt;
     }
-    NaklSession *preview = nakl_session_clone(impl_->handle);
+    VigoSession *preview = vigo_session_clone(impl_->handle);
     if (preview == nullptr)
     {
         return std::nullopt;
     }
-    std::unique_ptr<NaklSession, decltype(&nakl_session_free)> preview_owner(preview,
-                                                                           nakl_session_free);
+    std::unique_ptr<VigoSession, decltype(&vigo_session_free)> preview_owner(preview,
+                                                                           vigo_session_free);
     auto action = ProcessHandle(preview_owner.get(), event);
     if (action.has_value() && action->kind == EditAction::Kind::ReplaceBefore)
     {
@@ -287,4 +287,4 @@ void CompositionSession::Reset() noexcept
     }
 }
 
-} // namespace nakl::linux
+} // namespace vigo::linux

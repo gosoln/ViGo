@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $false)]
-    [string]$DllPath = "build/windows/Debug/NAKLTSF.dll"
+    [string]$DllPath = "build/windows/Debug/ViGoTSF.dll"
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,4 +27,4 @@ if ($process.ExitCode -ne 0) {
     throw "regsvr32 /u failed with exit code $($process.ExitCode)."
 }
 
-Write-Host "Unregistered NAKL TSF profile. Sign out to unload remaining DLL instances."
+Write-Host "Unregistered ViGo TSF profile. Sign out to unload remaining DLL instances."

@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-namespace nakl::windows
+namespace vigo::windows
 {
 
 struct HotKey
@@ -46,4 +46,4 @@ struct SettingsSnapshot
 [[nodiscard]] std::optional<std::string> WideToUtf8(std::wstring_view value);
 [[nodiscard]] std::optional<std::wstring> Utf8ToWide(std::string_view value);
 
-} // namespace nakl::windows
+} // namespace vigo::windows

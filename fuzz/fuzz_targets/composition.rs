@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use nakl_core::{Action, CompositionSession, InputEvent, TypingMethod};
+use vigo_core::{Action, CompositionSession, InputEvent, TypingMethod};
 
 fuzz_target!(|data: &[u8]| {
     let Some((&selector, input)) = data.split_first() else {

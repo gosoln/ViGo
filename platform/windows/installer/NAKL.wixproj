@@ -1,8 +1,0 @@
-<Project Sdk="WixToolset.Sdk/7.0.0">
-  <PropertyGroup>
-    <InstallerPlatform>x64</InstallerPlatform>
-    <OutputName>NAKL-2.0.0-windows-x64</OutputName>
-    <NAKLBuildDir Condition="'$(NAKLBuildDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\build\windows\Release</NAKLBuildDir>
-    <DefineConstants>NAKLBuildDir=$(NAKLBuildDir);RepositoryDir=$(MSBuildThisFileDirectory)..\..\..</DefineConstants>
-  </PropertyGroup>
-</Project>

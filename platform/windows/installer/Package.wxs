@@ -1,14 +1,14 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
-    Id="NAKL.InputMethod.Windows"
-    Name="NAKL"
-    Manufacturer="NAKL contributors"
+    Id="ViGo.InputMethod.Windows"
+    Name="ViGo"
+    Manufacturer="ViGo contributors"
     Version="2.0.0"
     Scope="perMachine">
 
     <MediaTemplate EmbedCab="yes" />
 
-    <Property Id="NAKL_TSF_PREVIOUS_DLL" Secure="yes">
+    <Property Id="VIGO_TSF_PREVIOUS_DLL" Secure="yes">
       <RegistrySearch
         Id="FindPreviousTsfDll"
         Root="HKLM"
@@ -16,20 +16,20 @@
         Type="raw"
         Bitness="always64" />
     </Property>
-    <Property Id="NAKL_TEST_FAIL_AFTER_REGISTER" Secure="yes" />
+    <Property Id="VIGO_TEST_FAIL_AFTER_REGISTER" Secure="yes" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="NAKL">
+      <Directory Id="INSTALLFOLDER" Name="ViGo">
         <Component Id="TsfComponent" Guid="*" Bitness="always64">
-          <File Id="TsfDll" Source="$(var.NAKLBuildDir)\NAKLTSF.dll" KeyPath="yes" />
+          <File Id="TsfDll" Source="$(var.ViGoBuildDir)\ViGoTSF.dll" KeyPath="yes" />
         </Component>
         <Component Id="SettingsComponent" Guid="*" Bitness="always64">
-          <File Id="SettingsExe" Source="$(var.NAKLBuildDir)\NAKLSettings.exe" KeyPath="yes">
+          <File Id="SettingsExe" Source="$(var.ViGoBuildDir)\ViGoSettings.exe" KeyPath="yes">
             <Shortcut
               Id="SettingsShortcut"
               Directory="ProgramMenuFolder"
-              Name="NAKL"
-              Description="Tùy chọn bộ gõ tiếng Việt NAKL"
+              Name="ViGo"
+              Description="Tùy chọn bộ gõ tiếng Việt ViGo"
               Arguments="--settings"
               WorkingDirectory="INSTALLFOLDER" />
           </File>
@@ -42,7 +42,7 @@
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder" />
 
-    <Feature Id="MainFeature" Title="NAKL" Level="1">
+    <Feature Id="MainFeature" Title="ViGo" Level="1">
       <ComponentRef Id="TsfComponent" />
       <ComponentRef Id="SettingsComponent" />
       <ComponentRef Id="LicenseComponent" />
@@ -86,7 +86,7 @@
     <CustomAction
       Id="RemoveCurrentUserStartup"
       Directory="System64Folder"
-      ExeCommand="reg.exe delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v NAKL /f"
+      ExeCommand="reg.exe delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v ViGo /f"
       Execute="immediate"
       Impersonate="yes"
       Return="ignore" />
@@ -99,10 +99,10 @@
       Return="check" />
     <SetProperty
       Id="RollbackRestorePreviousTsf"
-      Value="[NAKL_TSF_PREVIOUS_DLL]"
+      Value="[VIGO_TSF_PREVIOUS_DLL]"
       Before="RollbackRestorePreviousTsf"
       Sequence="execute"
-      Condition='$TsfComponent=3 AND NAKL_TSF_PREVIOUS_DLL' />
+      Condition='$TsfComponent=3 AND VIGO_TSF_PREVIOUS_DLL' />
 
     <InstallExecuteSequence>
       <Custom
@@ -120,11 +120,11 @@
       <Custom
         Action="RollbackRestorePreviousTsf"
         Before="InstallFiles"
-        Condition='$TsfComponent=3 AND NAKL_TSF_PREVIOUS_DLL' />
+        Condition='$TsfComponent=3 AND VIGO_TSF_PREVIOUS_DLL' />
       <Custom
         Action="RollbackUnregisterTsf"
         After="InstallFiles"
-        Condition='$TsfComponent=3 AND NOT NAKL_TSF_PREVIOUS_DLL' />
+        Condition='$TsfComponent=3 AND NOT VIGO_TSF_PREVIOUS_DLL' />
       <Custom
         Action="RegisterTsf"
         After="RollbackUnregisterTsf"
@@ -132,7 +132,7 @@
       <Custom
         Action="TestFailAfterRegister"
         After="RegisterTsf"
-        Condition='NAKL_TEST_FAIL_AFTER_REGISTER=1' />
+        Condition='VIGO_TEST_FAIL_AFTER_REGISTER=1' />
     </InstallExecuteSequence>
   </Package>
 </Wix>

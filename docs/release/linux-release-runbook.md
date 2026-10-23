@@ -14,8 +14,8 @@ mark P2 released until every required row in the Linux compatibility matrix is P
 
 ## Install and activate
 
-- Install `nakl-ibus` or `nakl-fcitx5`; do not require both frameworks.
-- Restart manually with `ibus restart` or `fcitx5 -rd`, then add **NAKL Telex** or **NAKL VNI** in
+- Install `vigo-ibus` or `vigo-fcitx5`; do not require both frameworks.
+- Restart manually with `ibus restart` or `fcitx5 -rd`, then add **ViGo Telex** or **ViGo VNI** in
   the desktop input-method configuration. Verify activation again after logout/login.
 - Do not restart or kill a user's input daemon from package maintainer scripts.
 
