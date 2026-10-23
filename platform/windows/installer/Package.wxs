@@ -39,7 +39,9 @@
         </Component>
         <Component Id="LicenseComponent" Guid="*" Bitness="always64">
           <File Id="LicenseFile" Source="$(var.RepositoryDir)\LICENSE" Name="LICENSE.txt" KeyPath="yes" />
-          <File Id="NoticeFile" Source="$(var.RepositoryDir)\NOTICE" Name="NOTICE.txt" />
+        </Component>
+        <Component Id="NoticeComponent" Guid="*" Bitness="always64">
+          <File Id="NoticeFile" Source="$(var.RepositoryDir)\NOTICE" Name="NOTICE.txt" KeyPath="yes" />
         </Component>
       </Directory>
     </StandardDirectory>
@@ -49,6 +51,7 @@
       <ComponentRef Id="TsfComponent" />
       <ComponentRef Id="SettingsComponent" />
       <ComponentRef Id="LicenseComponent" />
+      <ComponentRef Id="NoticeComponent" />
     </Feature>
 
     <CustomAction
