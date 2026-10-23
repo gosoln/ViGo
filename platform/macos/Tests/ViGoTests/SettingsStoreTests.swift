@@ -133,3 +133,37 @@ func hotKeysRequireModifiersPersistAndRemainUnique() throws {
   #expect(restored.toggleInputShortcut == nil)
   #expect(restored.switchMethodShortcut == shortcut)
 }
+
+@Test("Current-application hot key persists, stays unique, and toggles exclusion")
+@MainActor
+func currentApplicationHotKeyTogglesExclusion() throws {
+  let suiteName = "CurrentApplicationHotKeyTests.\(UUID().uuidString)"
+  let defaults = try #require(UserDefaults(suiteName: suiteName))
+  defer { defaults.removePersistentDomain(forName: suiteName) }
+
+  let shortcut = try #require(
+    KeyboardShortcut(keyCode: 0, modifierFlags: [.control, .shift])
+  )
+  let application = ExcludedApplication(
+    bundleIdentifier: "com.example.Editor",
+    displayName: "Editor"
+  )
+  let first = SettingsStore(defaults: defaults)
+  first.setShortcut(shortcut, for: .toggleInput)
+  first.setShortcut(shortcut, for: .toggleCurrentApplication)
+  #expect(first.toggleInputShortcut == nil)
+  #expect(first.toggleCurrentApplicationShortcut == shortcut)
+
+  let restored = SettingsStore(defaults: defaults)
+  #expect(restored.toggleCurrentApplicationShortcut == shortcut)
+  #expect(shortcut.displayName == "⌃⇧A")
+
+  restored.perform(.toggleCurrentApplication, currentApplication: application)
+  #expect(restored.isExcluded(bundleIdentifier: application.bundleIdentifier))
+
+  restored.perform(.toggleCurrentApplication, currentApplication: application)
+  #expect(!restored.isExcluded(bundleIdentifier: application.bundleIdentifier))
+
+  restored.perform(.toggleCurrentApplication, currentApplication: nil)
+  #expect(restored.excludedApplications.isEmpty)
+}

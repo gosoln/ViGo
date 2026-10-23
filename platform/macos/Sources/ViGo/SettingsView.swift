@@ -77,10 +77,21 @@ private struct GeneralSettingsView: View {
             settings.setShortcut($0, for: .switchMethod)
           }
         }
+        HStack {
+          Text("Bật/Tắt trong ứng dụng hiện tại")
+          Spacer()
+          ShortcutRecorderButton(
+            shortcut: settings.toggleCurrentApplicationShortcut
+          ) {
+            settings.setShortcut($0, for: .toggleCurrentApplication)
+          }
+        }
       } header: {
         Text("Phím nóng")
       } footer: {
-        Text("Nhấn Esc để hủy; bấm chuột phải vào phím nóng để xóa.")
+        Text(
+          "Tổ hợp cần ít nhất một phím Control, Option hoặc Command kết hợp phím chính (ví dụ ⌃⇧Space). Phím nóng theo ứng dụng áp dụng cho ứng dụng đang ở phía trước khi nhấn và thêm/gỡ ứng dụng đó khỏi danh sách loại trừ bên dưới. Nhấn Esc để hủy; bấm chuột phải vào phím nóng để xóa."
+        )
       }
 
       Section {

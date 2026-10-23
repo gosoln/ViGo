@@ -32,6 +32,7 @@ struct DirectInputApplicationPolicy {
 struct DirectInputHotKeyPolicy {
   let toggleInput: KeyboardShortcut?
   let switchMethod: KeyboardShortcut?
+  var toggleCurrentApplication: KeyboardShortcut? = nil
 
   func action(
     keyCode: UInt16,
@@ -43,6 +44,12 @@ struct DirectInputHotKeyPolicy {
     if switchMethod?.matches(keyCode: keyCode, modifierFlags: modifierFlags) == true {
       return .switchMethod
     }
+    if toggleCurrentApplication?.matches(
+      keyCode: keyCode,
+      modifierFlags: modifierFlags
+    ) == true {
+      return .toggleCurrentApplication
+    }
     return nil
   }
 }
@@ -53,13 +60,15 @@ final class DirectInputTap {
   private var configuration = CoreConfigurationSnapshot()
   private var engine: DirectTypingEngine?
   private var eventTap: CFMachPort?
-  private let handleHotKey: (HotKeyAction) -> Void
+  private let handleHotKey: (HotKeyAction, ExcludedApplication?) -> Void
   private var hotKeyPolicy = DirectInputHotKeyPolicy(toggleInput: nil, switchMethod: nil)
   private var runLoopSource: CFRunLoopSource?
   private var securityPolicy = DirectInputSecurityPolicy()
   private var secureInputPollTimer: Timer?
 
-  init(handleHotKey: @escaping (HotKeyAction) -> Void = { _ in }) {
+  init(
+    handleHotKey: @escaping (HotKeyAction, ExcludedApplication?) -> Void = { _, _ in }
+  ) {
     self.handleHotKey = handleHotKey
     engine = DirectTypingEngine(configuration: configuration)
     refreshApplicationPolicy()
@@ -169,7 +178,13 @@ final class DirectInputTap {
       )
     {
       resetSession()
-      handleHotKey(action)
+      let currentApplication = activeApplication?.bundleIdentifier.map {
+        ExcludedApplication(
+          bundleIdentifier: $0,
+          displayName: activeApplication?.localizedName ?? $0
+        )
+      }
+      handleHotKey(action, currentApplication)
       return nil
     }
     guard applicationPolicy.shouldProcess(bundleIdentifier: activeApplication?.bundleIdentifier)
@@ -250,7 +265,10 @@ final class DirectInputTap {
     }
     hotKeyPolicy = DirectInputHotKeyPolicy(
       toggleInput: shortcut(for: SettingsKey.toggleInputShortcut),
-      switchMethod: shortcut(for: SettingsKey.switchMethodShortcut)
+      switchMethod: shortcut(for: SettingsKey.switchMethodShortcut),
+      toggleCurrentApplication: shortcut(
+        for: SettingsKey.toggleCurrentApplicationShortcut
+      )
     )
   }
 

@@ -22,9 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       bundleIdentifier: bundleIdentifier
     )
 
-    let directInputTap = DirectInputTap { [weak settings] action in
+    let directInputTap = DirectInputTap { [weak settings] action, application in
       Task { @MainActor in
-        settings?.perform(action)
+        settings?.perform(action, currentApplication: application)
       }
     }
     self.directInputTap = directInputTap

@@ -191,9 +191,13 @@ func hotKeyPolicyMapsConfiguredCombinationsToActions() throws {
   let switchMethod = try #require(
     KeyboardShortcut(keyCode: 17, modifierFlags: [.control, .option])
   )
+  let toggleCurrentApplication = try #require(
+    KeyboardShortcut(keyCode: 0, modifierFlags: [.control, .shift])
+  )
   let policy = DirectInputHotKeyPolicy(
     toggleInput: toggle,
-    switchMethod: switchMethod
+    switchMethod: switchMethod,
+    toggleCurrentApplication: toggleCurrentApplication
   )
 
   #expect(
@@ -201,6 +205,10 @@ func hotKeyPolicyMapsConfiguredCombinationsToActions() throws {
   )
   #expect(
     policy.action(keyCode: 17, modifierFlags: [.control, .option]) == .switchMethod
+  )
+  #expect(
+    policy.action(keyCode: 0, modifierFlags: [.control, .shift])
+      == .toggleCurrentApplication
   )
   #expect(policy.action(keyCode: 0, modifierFlags: [.command]) == nil)
 }

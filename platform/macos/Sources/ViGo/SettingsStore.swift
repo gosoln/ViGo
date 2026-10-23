@@ -14,6 +14,7 @@ enum SettingsKey {
   static let excludedApplications = "excludedApplications"
   static let toggleInputShortcut = "hotKey.toggleInput"
   static let switchMethodShortcut = "hotKey.switchMethod"
+  static let toggleCurrentApplicationShortcut = "hotKey.toggleCurrentApplication"
 }
 
 enum TypingMethod: String, CaseIterable, Codable, Identifiable {
@@ -52,6 +53,7 @@ struct ExcludedApplication: Codable, Equatable, Identifiable {
 enum HotKeyAction: Equatable {
   case toggleInput
   case switchMethod
+  case toggleCurrentApplication
 }
 
 struct KeyboardShortcut: Codable, Equatable {
@@ -141,6 +143,15 @@ final class SettingsStore: ObservableObject {
     didSet { persistShortcut(switchMethodShortcut, key: SettingsKey.switchMethodShortcut) }
   }
 
+  @Published private(set) var toggleCurrentApplicationShortcut: KeyboardShortcut? {
+    didSet {
+      persistShortcut(
+        toggleCurrentApplicationShortcut,
+        key: SettingsKey.toggleCurrentApplicationShortcut
+      )
+    }
+  }
+
   @Published private(set) var launchAtLogin: Bool
   @Published private(set) var launchAtLoginError: String?
 
@@ -175,6 +186,10 @@ final class SettingsStore: ObservableObject {
     switchMethodShortcut = Self.loadShortcut(
       defaults: defaults,
       key: SettingsKey.switchMethodShortcut
+    )
+    toggleCurrentApplicationShortcut = Self.loadShortcut(
+      defaults: defaults,
+      key: SettingsKey.toggleCurrentApplicationShortcut
     )
     launchAtLogin = SMAppService.mainApp.status == .enabled
   }
@@ -227,20 +242,37 @@ final class SettingsStore: ObservableObject {
     case .toggleInput:
       toggleInputShortcut = shortcut
       if shortcut == switchMethodShortcut { switchMethodShortcut = nil }
+      if shortcut == toggleCurrentApplicationShortcut {
+        toggleCurrentApplicationShortcut = nil
+      }
     case .switchMethod:
       switchMethodShortcut = shortcut
       if shortcut == toggleInputShortcut { toggleInputShortcut = nil }
+      if shortcut == toggleCurrentApplicationShortcut {
+        toggleCurrentApplicationShortcut = nil
+      }
+    case .toggleCurrentApplication:
+      toggleCurrentApplicationShortcut = shortcut
+      if shortcut == toggleInputShortcut { toggleInputShortcut = nil }
+      if shortcut == switchMethodShortcut { switchMethodShortcut = nil }
     }
     notifySettingsChanged()
   }
 
-  func perform(_ action: HotKeyAction) {
+  func perform(
+    _ action: HotKeyAction,
+    currentApplication: ExcludedApplication? = nil
+  ) {
     switch action {
     case .toggleInput:
       isEnabled.toggle()
     case .switchMethod:
       method = method == .telex ? .vni : .telex
       isEnabled = true
+    case .toggleCurrentApplication:
+      if let currentApplication {
+        toggleExclusion(currentApplication)
+      }
     }
   }
 

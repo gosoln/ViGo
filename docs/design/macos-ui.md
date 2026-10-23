@@ -4,7 +4,7 @@ ViGo is a menu-bar utility with no default Dock icon or main document window. Th
 
 The 620×400 settings window uses native controls and three tabs:
 
-- **Tùy chọn** controls enablement, typing method, and launch at login.
+- **Tùy chọn** controls enablement, typing method, launch at login, the excluded-application list, and three recordable global hot keys: toggle typing, switch typing method, and toggle typing for the application currently in front (which adds or removes it from the excluded-application list). A hot key needs a main key plus at least one of Control, Option, or Command (for example ⌃⇧Space).
 - **Gõ tắt** edits locally persisted shortcut/replacement pairs in a compact list.
 - **Giới thiệu** shows product identity, version, privacy, license, and source link.
 
