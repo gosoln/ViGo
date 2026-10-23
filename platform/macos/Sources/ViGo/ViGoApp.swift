@@ -70,15 +70,14 @@ struct ViGoApp: App {
   @StateObject private var settings = SettingsStore.shared
 
   var body: some Scene {
-    MenuBarExtra(
-      "ViGo",
-      systemImage: menuBarIcon
-    ) {
+    MenuBarExtra {
       StatusMenu(
         accessibility: accessibility,
         activeApplicationMonitor: activeApplication,
         settings: settings
       )
+    } label: {
+      menuBarLabel
     }
     .menuBarExtraStyle(.menu)
 
@@ -87,9 +86,43 @@ struct ViGoApp: App {
     }
   }
 
-  private var menuBarIcon: String {
-    if !accessibility.isGranted { return "exclamationmark.triangle" }
-    return settings.isEnabled ? "keyboard.fill" : "keyboard"
+  private var menuBarImageName: String {
+    let excluded =
+      activeApplication.activeApplication.map {
+        settings.isExcluded(bundleIdentifier: $0.bundleIdentifier)
+      } ?? false
+    return MenuBarImage.name(method: settings.method, isActive: settings.isEnabled && !excluded)
+  }
+
+  @ViewBuilder
+  private var menuBarLabel: some View {
+    if !accessibility.isGranted {
+      Image(systemName: "exclamationmark.triangle")
+    } else if let image = MenuBarImage.load(name: menuBarImageName) {
+      Image(nsImage: image)
+    } else {
+      Image(systemName: settings.isEnabled ? "keyboard.fill" : "keyboard")
+    }
+  }
+}
+
+/// Template images bundled by `scripts/build-app.sh`; absent when running via `swift run`.
+enum MenuBarImage {
+  static func name(method: TypingMethod, isActive: Bool) -> String {
+    guard isActive else { return "ViGoMenuBarOff" }
+    switch method {
+    case .telex: return "ViGoMenuBarTelex"
+    case .vni: return "ViGoMenuBarVNI"
+    }
+  }
+
+  static func load(name: String, bundle: Bundle = .main) -> NSImage? {
+    guard let url = bundle.url(forResource: name, withExtension: "png"),
+      let image = NSImage(contentsOf: url)
+    else { return nil }
+    image.size = NSSize(width: 26, height: 18)
+    image.isTemplate = true
+    return image
   }
 }
 
@@ -157,8 +190,16 @@ private struct StatusMenu: View {
       }
     }
 
-    Button(settings.isEnabled ? "Tắt" : "Bật") {
-      settings.isEnabled.toggle()
+    // Exactly one of Telex, VNI, or Tắt is always checked so the menu keeps the same
+    // checkmark column (and text alignment) whether typing is on or off.
+    Button {
+      settings.isEnabled = false
+    } label: {
+      if settings.isEnabled {
+        Text("Tắt")
+      } else {
+        Label("Tắt", systemImage: "checkmark")
+      }
     }
 
     if let activeApplication = activeApplicationMonitor.activeApplication {

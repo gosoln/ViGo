@@ -6,6 +6,8 @@
     <string>ViGo</string>
     <key>CFBundleExecutable</key>
     <string>ViGo</string>
+    <key>CFBundleIconFile</key>
+    <string>ViGo</string>
     <key>CFBundleIdentifier</key>
     <string>com.gosoln.inputmethod.ViGo</string>
     <key>CFBundleInfoDictionaryVersion</key>

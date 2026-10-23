@@ -55,6 +55,9 @@ lipo -create "$ARM64_BIN/ViGo" "$X86_64_BIN/ViGo" \
     -output "$STAGED_APP/Contents/MacOS/ViGo"
 cp "$PACKAGE_DIR/Resources/Info.plist" "$STAGED_APP/Contents/Info.plist"
 cp -X "$REPOSITORY_DIR/LICENSE" "$STAGED_APP/Contents/Resources/LICENSE"
+for icon_file in ViGo.icns ViGoMenuBarTelex.png ViGoMenuBarVNI.png ViGoMenuBarOff.png; do
+    cp -X "$REPOSITORY_DIR/assets/icon/$icon_file" "$STAGED_APP/Contents/Resources/$icon_file"
+done
 
 BUILD_NUMBER=${VIGO_BUILD_NUMBER:-$(git -C "$REPOSITORY_DIR" rev-list --count HEAD)}
 case "$BUILD_NUMBER" in
