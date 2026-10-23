@@ -8,6 +8,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Make a failing native command (cmake, dotnet, ...) stop the script (PowerShell 7.3+).
+$PSNativeCommandUseErrorActionPreference = $true
 
 if (-not [Environment]::Is64BitOperatingSystem) {
     throw "ViGo Windows release builds require Windows x64."
@@ -31,7 +33,7 @@ try {
     cargo build -p vigo-core --release
     cargo test -p vigo-core --release --test performance -- --ignored --nocapture
     cmake -S platform/windows -B $buildDirectory -A x64 -DBUILD_TESTING=ON `
-        -DVIGO_CORE_LIBRARY=$coreLibrary
+        "-DVIGO_CORE_LIBRARY=$coreLibrary"
     cmake --build $buildDirectory --config $Configuration
     ctest --test-dir $buildDirectory -C $Configuration --output-on-failure
     & platform/windows/scripts/verify-build.ps1 `
@@ -40,9 +42,9 @@ try {
     dotnet build $installerProject `
         -c $Configuration `
         -p:AcceptEula=wix7 `
-        -p:ViGoBuildDir=$nativeOutput
+        "-p:ViGoBuildDir=$nativeOutput"
 } finally {
     Pop-Location
 }
 
-Write-Host "Release artifacts are under $nativeOutput and platform/windows/installer/bin/$Configuration."
+Write-Host "Release artifacts are under $nativeOutput and platform/windows/installer/bin (under the platform and configuration folders)."

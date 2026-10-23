@@ -89,7 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: platform/windows/installer/bin/Release/**/*.msi
+          path: platform/windows/installer/bin/**/*.msi
           if-no-files-found: error
 
   publish:
