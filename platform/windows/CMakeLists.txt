@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(ViGoWindows LANGUAGES CXX)
+if(WIN32)
+    enable_language(RC)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -68,6 +71,7 @@ if(WIN32)
         src/registration.cpp
         src/text_service.cpp
         resources/vigo_tsf.def
+        resources/vigo.rc
     )
     target_include_directories(vigo_tsf PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_compile_definitions(vigo_tsf PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -89,7 +93,7 @@ if(WIN32)
     set_target_properties(vigo_tsf PROPERTIES PREFIX "" OUTPUT_NAME "ViGoTSF")
     install(TARGETS vigo_tsf RUNTIME DESTINATION bin LIBRARY DESTINATION bin)
 
-    add_executable(vigo_settings WIN32 src/settings_app.cpp)
+    add_executable(vigo_settings WIN32 src/settings_app.cpp resources/vigo.rc)
     target_include_directories(vigo_settings PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_compile_definitions(vigo_settings PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
     target_link_libraries(vigo_settings PRIVATE vigo_windows_settings comctl32 shell32 user32)

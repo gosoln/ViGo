@@ -19,6 +19,7 @@ namespace
 {
 
 constexpr wchar_t WindowClassName[] = L"ViGoSettingsWindow";
+constexpr int AppIconResourceId = 1; // matches resources/vigo.rc
 constexpr UINT TrayMessage = WM_APP + 1;
 constexpr UINT ShowSettingsMessage = WM_APP + 2;
 constexpr UINT TrayId = 1;
@@ -684,11 +685,21 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
     WNDCLASSEXW window_class{.cbSize = sizeof(window_class)};
     window_class.lpfnWndProc = WindowProcedure;
     window_class.hInstance = instance;
-    window_class.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    window_class.hIcon = LoadIconW(instance, MAKEINTRESOURCEW(AppIconResourceId));
+    if (window_class.hIcon == nullptr)
+    {
+        window_class.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    }
     window_class.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     window_class.hbrBackground = reinterpret_cast<HBRUSH>(static_cast<INT_PTR>(COLOR_WINDOW + 1));
     window_class.lpszClassName = WindowClassName;
-    window_class.hIconSm = window_class.hIcon;
+    window_class.hIconSm = static_cast<HICON>(
+        LoadImageW(instance, MAKEINTRESOURCEW(AppIconResourceId), IMAGE_ICON,
+                   GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
+    if (window_class.hIconSm == nullptr)
+    {
+        window_class.hIconSm = window_class.hIcon;
+    }
     if (RegisterClassExW(&window_class) == 0)
     {
         CloseHandle(mutex);
@@ -711,7 +722,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
     state.tray.uID = TrayId;
     state.tray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     state.tray.uCallbackMessage = TrayMessage;
-    state.tray.hIcon = window_class.hIcon;
+    state.tray.hIcon = window_class.hIconSm;
     wcscpy_s(state.tray.szTip, L"ViGo");
     if (Shell_NotifyIconW(NIM_ADD, &state.tray) == FALSE)
     {

@@ -8,6 +8,9 @@
 
     <MediaTemplate EmbedCab="yes" />
 
+    <Icon Id="ViGo.ico" SourceFile="$(var.RepositoryDir)\assets\icon\ViGo.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ViGo.ico" />
+
     <Property Id="VIGO_TSF_PREVIOUS_DLL" Secure="yes">
       <RegistrySearch
         Id="FindPreviousTsfDll"

@@ -15,6 +15,7 @@
       <language>vi</language>
       <license>GPL-3.0-or-later</license>
       <author>ViGo contributors</author>
+      <icon>vigo-ibus</icon>
       <layout>us</layout>
       <symbol>V</symbol>
     </engine>
@@ -24,6 +25,7 @@
       <language>vi</language>
       <license>GPL-3.0-or-later</license>
       <author>ViGo contributors</author>
+      <icon>vigo-ibus</icon>
       <layout>us</layout>
       <symbol>V</symbol>
     </engine>

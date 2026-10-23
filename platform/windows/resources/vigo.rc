@@ -1,0 +1,3 @@
+// Resource ID 1 is the first icon in the module: Windows shows it for the
+// ViGoTSF.dll input profile (see RegisterProfile) and for ViGoSettings.exe.
+1 ICON "../../../assets/icon/ViGo.ico"

@@ -108,6 +108,18 @@ func drawAppIcon(_ cg: CGContext) {
     hatColor: color(0xFFC83D))
 }
 
+/// Windows and Linux icons fill the canvas (no macOS margin or drop shadow).
+func drawFlatIcon(_ cg: CGContext) {
+  let body = CGRect(x: 24, y: 24, width: 976, height: 976)
+  cg.setFillColor(color(0x3A3A41))
+  cg.addPath(roundedPath(body, 220))
+  cg.fillPath()
+  cg.setFillColor(color(0xFFFFFF))
+  drawCircumflexE(
+    cg, center: CGPoint(x: body.midX, y: body.midY), letterSize: 780, hatWidth: 74,
+    hatColor: color(0xFFC83D))
+}
+
 func labelLine(_ text: String, size: CGFloat) -> (line: CTLine, bounds: CGRect) {
   let font = NSFont.systemFont(ofSize: size, weight: .bold)
   let line = CTLineCreateWithAttributedString(
@@ -186,4 +198,11 @@ for (name, label, filled) in menuBarLabels {
       drawMenuBar($0, label: label, size: menuBarLabelSize, filled: filled)
     },
     to: output.appendingPathComponent("\(name).png"))
+}
+
+// Flat icons for Windows (.ico source) and Linux (hicolor).
+let flat = output.appendingPathComponent("flat", isDirectory: true)
+try FileManager.default.createDirectory(at: flat, withIntermediateDirectories: true)
+for size in [16, 22, 24, 32, 40, 48, 64, 128, 256, 512] {
+  try write(bitmap(size, draw: drawFlatIcon), to: flat.appendingPathComponent("\(size).png"))
 }

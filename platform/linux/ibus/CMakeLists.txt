@@ -9,5 +9,11 @@ include(GNUInstallDirs)
 install(TARGETS ibus-engine-vigo RUNTIME DESTINATION "${CMAKE_INSTALL_LIBEXECDIR}"
         COMPONENT ibus)
 configure_file(vigo.xml.in vigo.xml @ONLY)
+foreach(size 16 22 24 32 48 64 128 256 512)
+    install(FILES "${VIGO_REPOSITORY_DIR}/assets/icon/flat/${size}.png"
+            RENAME vigo-ibus.png
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps"
+            COMPONENT ibus)
+endforeach()
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vigo.xml"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/ibus/component" COMPONENT ibus)

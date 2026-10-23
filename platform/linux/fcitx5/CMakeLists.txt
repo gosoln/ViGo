@@ -19,5 +19,11 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vigo-addon.conf"
         RENAME vigo.conf DESTINATION "${FCITX_INSTALL_PKGDATADIR}/addon" COMPONENT fcitx5)
 install(FILES vigo-telex.conf vigo-vni.conf
         DESTINATION "${FCITX_INSTALL_PKGDATADIR}/inputmethod" COMPONENT fcitx5)
+foreach(size 16 22 24 32 48 64 128 256 512)
+    install(FILES "${VIGO_REPOSITORY_DIR}/assets/icon/flat/${size}.png"
+            RENAME vigo-fcitx5.png
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${size}x${size}/apps"
+            COMPONENT fcitx5)
+endforeach()
 install(FILES com.gosoln.ViGo.Fcitx5.metainfo.xml
         DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo" COMPONENT fcitx5)

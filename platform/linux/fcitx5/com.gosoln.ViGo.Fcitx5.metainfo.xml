@@ -6,5 +6,6 @@
   <summary>Vietnamese Telex and VNI input method for Fcitx5</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
+  <icon type="stock">vigo-fcitx5</icon>
   <url type="homepage">https://github.com/huyphan/NAKL</url>
 </component>
