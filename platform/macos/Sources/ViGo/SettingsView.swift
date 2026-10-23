@@ -243,7 +243,7 @@ private struct AboutView: View {
       Text("Bộ gõ tiếng Việt riêng tư cho macOS, Windows và Linux.")
         .multilineTextAlignment(.center)
 
-      Link("Mã nguồn và tài liệu", destination: URL(string: "https://github.com/huyphan/ViGo")!)
+      Link("Mã nguồn và tài liệu", destination: URL(string: "https://github.com/gosoln/ViGo")!)
 
       Text("GPL-3.0-or-later · Xử lý phím hoàn toàn trên thiết bị")
         .font(.caption)

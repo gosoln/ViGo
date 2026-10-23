@@ -35,6 +35,6 @@ Credits
 
 License
 =======
-* Distributed under the GNU GPLv3. See the file [LICENSE](https://github.com/huyphan/NAKL/blob/master/LICENSE).
+* Distributed under the GNU GPLv3. See the file [LICENSE](LICENSE).
 * Key handling algorithm and keymap of this project are based on [xvnkb](http://xvnkb.sourceforge.net/) written by Dao Hai Lam.
 * HotKey setting is based on [ShortcutRecorder](http://wafflesoftware.net/shortcut/) library.

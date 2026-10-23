@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Câu hỏi và trao đổi / Questions and discussion
-    url: https://github.com/OWNER/ViGo/discussions
+    url: https://github.com/gosoln/ViGo/discussions
     about: Hỏi cách dùng, chia sẻ ý tưởng. Please use Discussions for questions.
   - name: Lỗ hổng bảo mật / Security vulnerability
-    url: https://github.com/OWNER/ViGo/security/advisories/new
+    url: https://github.com/gosoln/ViGo/security/advisories/new
     about: Báo riêng tư, không mở issue công khai. Report privately; do not open a public issue.

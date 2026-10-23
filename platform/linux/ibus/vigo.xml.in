@@ -6,7 +6,7 @@
   <version>2.0.0</version>
   <license>GPL-3.0-or-later</license>
   <author>ViGo contributors</author>
-  <homepage>https://github.com/huyphan/NAKL</homepage>
+  <homepage>https://github.com/gosoln/ViGo</homepage>
   <textdomain>vigo</textdomain>
   <engines>
     <engine>
