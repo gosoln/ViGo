@@ -333,7 +333,42 @@ impl CompositionSession {
         }
     }
 
+    /// Vowels a modifier may act on, when the current word can still be one
+    /// Vietnamese syllable: a single contiguous vowel nucleus followed only
+    /// by a valid coda. Anything else (a second vowel cluster, or consonants
+    /// that cannot close a syllable) makes modifier keys literal, so words
+    /// such as "developer" pass through unchanged.
+    fn modifier_vowels(&self) -> Option<Vec<(usize, Vowel)>> {
+        let mut vowels = Vec::new();
+        let mut last_vowel_char_index = None;
+        for (char_index, (byte_index, character)) in self.word.char_indices().enumerate() {
+            if let Some(vowel) = parse_vowel(character) {
+                if matches!(last_vowel_char_index, Some(last) if char_index != last + 1) {
+                    return None;
+                }
+                last_vowel_char_index = Some(char_index);
+                vowels.push((byte_index, vowel));
+            }
+        }
+        if let Some(last) = last_vowel_char_index {
+            let coda: String = self
+                .word
+                .chars()
+                .skip(last + 1)
+                .flat_map(char::to_lowercase)
+                .collect();
+            if !matches!(
+                coda.as_str(),
+                "" | "c" | "ch" | "m" | "n" | "ng" | "ngh" | "nh" | "p" | "t"
+            ) {
+                return None;
+            }
+        }
+        Some(vowels)
+    }
+
     fn apply_modifier(&mut self, modifier: Modifier) -> Option<Action> {
+        let eligible_vowels = self.modifier_vowels()?;
         match modifier {
             Modifier::Shape {
                 shape,
@@ -386,11 +421,7 @@ impl CompositionSession {
                 Some(self.replace_scalar(byte_index, render_vowel(vowel)))
             }
             Modifier::Tone { tone, literal } => {
-                let vowels: Vec<_> = self
-                    .word
-                    .char_indices()
-                    .filter_map(|(index, ch)| parse_vowel(ch).map(|vowel| (index, vowel)))
-                    .collect();
+                let vowels = eligible_vowels;
                 let shaped = vowels
                     .iter()
                     .rev()

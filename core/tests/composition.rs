@@ -175,3 +175,104 @@ fn product_golden_corpus_matches_reviewed_behavior() {
         );
     }
 }
+
+#[test]
+fn telex_english_word_with_invalid_coda_stays_literal() {
+    assert_eq!(compose(TypingMethod::Telex, "deve"), "deve");
+    assert_eq!(compose(TypingMethod::Telex, "developer"), "developer");
+}
+
+#[test]
+fn telex_tone_key_after_a_second_vowel_cluster_stays_literal() {
+    assert_eq!(compose(TypingMethod::Telex, "loper"), "loper");
+    assert_eq!(compose(TypingMethod::Telex, "develope"), "develope");
+}
+
+#[test]
+fn telex_delayed_shape_after_a_valid_coda_still_applies() {
+    assert_eq!(compose(TypingMethod::Telex, "tama"), "tâm");
+    assert_eq!(compose(TypingMethod::Telex, "dongo"), "dông");
+    assert_eq!(compose(TypingMethod::Telex, "viete"), "viêt");
+}
+
+#[test]
+fn vni_shape_digit_after_a_second_vowel_cluster_stays_literal() {
+    assert_eq!(compose(TypingMethod::Vni, "deve6"), "deve6");
+    assert_eq!(compose(TypingMethod::Vni, "an6"), "ân");
+}
+
+#[test]
+fn telex_multi_cluster_english_words_stay_literal() {
+    for input in [
+        "return", "internet", "function", "computer", "window", "facebook", "youtube",
+    ] {
+        assert_eq!(compose(TypingMethod::Telex, input), input);
+    }
+}
+
+#[test]
+fn telex_vowel_key_after_an_invalid_coda_stays_literal() {
+    assert_eq!(compose(TypingMethod::Telex, "ebe"), "ebe");
+    assert_eq!(compose(TypingMethod::Telex, "aba"), "aba");
+}
+
+#[test]
+fn telex_delayed_shape_applies_over_each_valid_coda() {
+    assert_eq!(compose(TypingMethod::Telex, "cana"), "cân");
+    assert_eq!(compose(TypingMethod::Telex, "hiepe"), "hiêp");
+    assert_eq!(compose(TypingMethod::Telex, "vieec"), "viêc");
+    assert_eq!(compose(TypingMethod::Telex, "tieech"), "tiêch");
+    assert_eq!(compose(TypingMethod::Telex, "vieenh"), "viênh");
+}
+
+#[test]
+fn telex_delayed_tone_stroke_and_w_apply_after_a_coda() {
+    assert_eq!(compose(TypingMethod::Telex, "tamf"), "tàm");
+    assert_eq!(compose(TypingMethod::Telex, "vietj"), "viẹt");
+    assert_eq!(compose(TypingMethod::Telex, "dad"), "đa");
+    assert_eq!(compose(TypingMethod::Telex, "did"), "đi");
+    assert_eq!(compose(TypingMethod::Telex, "tamw"), "tăm");
+    assert_eq!(compose(TypingMethod::Telex, "canw"), "căn");
+}
+
+#[test]
+fn vni_delayed_modifiers_apply_over_a_coda() {
+    assert_eq!(compose(TypingMethod::Vni, "tam1"), "tám");
+    assert_eq!(compose(TypingMethod::Vni, "ta6m"), "tâm");
+    assert_eq!(compose(TypingMethod::Vni, "vie6t1"), "viết");
+}
+
+#[test]
+fn vni_digits_stay_literal_in_english_words() {
+    assert_eq!(compose(TypingMethod::Vni, "hello1"), "hello1");
+    assert_eq!(compose(TypingMethod::Vni, "window123"), "window123");
+}
+
+#[test]
+fn modifiers_apply_again_in_the_next_word_after_a_boundary() {
+    assert_eq!(
+        compose(TypingMethod::Telex, "developer tieengs"),
+        "developer tiếng"
+    );
+}
+
+#[test]
+fn uppercase_english_words_stay_literal() {
+    assert_eq!(compose(TypingMethod::Telex, "Developer"), "Developer");
+    assert_eq!(compose(TypingMethod::Telex, "DEVELOPER"), "DEVELOPER");
+}
+
+#[test]
+fn backspace_into_a_multi_cluster_word_keeps_modifier_keys_literal() {
+    let mut session = CompositionSession::new(TypingMethod::Telex);
+    let mut document = apply_input(&mut session, "develope");
+    assert_eq!(document, "develope");
+
+    assert_eq!(session.process(InputEvent::Backspace), Action::PassThrough);
+    document.pop();
+    assert_eq!(document, "develop");
+
+    assert_eq!(session.process(InputEvent::Text('r')), Action::PassThrough);
+    document.push('r');
+    assert_eq!(document, "developr");
+}

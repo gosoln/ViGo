@@ -1,2 +1,7 @@
 # method	input	legacy_output	proposed_output	reason
 # No unresolved M0 behavior cases. Add new disagreements here before changing product fixtures.
+telex	tamaa	tama	tama	Repeat shape key after a coda: legacy undoes the shape in place; the core currently appends the literal after the shaped vowel and duplicates it (taam)
+telex	vietee	viete	viete	Repeat shape key after a coda: same duplicated-vowel divergence as tamaa (core currently vieet)
+telex	tieenge	tienge	tienge	Repeat shape key after a coda: same duplicated-vowel divergence as tamaa (core currently tieeng)
+telex	class	class	class	Legacy rejects the invalid onset cluster and never applies the tone; the core applies then undoes it, consuming one literal s (currently clas)
+telex	asas	ás	ás	Repeat tone on a shaped vowel: legacy removes the shape; the core removes the tone and locks the word (currently âs)
