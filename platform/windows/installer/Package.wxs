@@ -27,15 +27,19 @@
           <File Id="TsfDll" Source="$(var.ViGoBuildDir)\ViGoTSF.dll" KeyPath="yes" />
         </Component>
         <Component Id="SettingsComponent" Guid="*" Bitness="always64">
-          <File Id="SettingsExe" Source="$(var.ViGoBuildDir)\ViGoSettings.exe" KeyPath="yes">
-            <Shortcut
-              Id="SettingsShortcut"
-              Directory="ProgramMenuFolder"
-              Name="ViGo"
-              Description="Tùy chọn bộ gõ tiếng Việt ViGo"
-              Arguments="--settings"
-              WorkingDirectory="INSTALLFOLDER" />
-          </File>
+          <File Id="SettingsExe" Source="$(var.ViGoBuildDir)\ViGoSettings.exe" KeyPath="yes" />
+        </Component>
+        <!-- The Start menu shortcut lives in its own component with an HKCU key path (ICE43, ICE57). -->
+        <Component Id="SettingsShortcutComponent" Guid="*">
+          <Shortcut
+            Id="SettingsShortcut"
+            Directory="ProgramMenuFolder"
+            Name="ViGo"
+            Description="Tùy chọn bộ gõ tiếng Việt ViGo"
+            Target="[#SettingsExe]"
+            Arguments="--settings"
+            WorkingDirectory="INSTALLFOLDER" />
+          <RegistryValue Root="HKCU" Key="Software\ViGo\Installer" Name="SettingsShortcut" Type="integer" Value="1" KeyPath="yes" />
         </Component>
         <Component Id="LicenseComponent" Guid="*" Bitness="always64">
           <File Id="LicenseFile" Source="$(var.RepositoryDir)\LICENSE" Name="LICENSE.txt" KeyPath="yes" />
@@ -50,6 +54,7 @@
     <Feature Id="MainFeature" Title="ViGo" Level="1">
       <ComponentRef Id="TsfComponent" />
       <ComponentRef Id="SettingsComponent" />
+      <ComponentRef Id="SettingsShortcutComponent" />
       <ComponentRef Id="LicenseComponent" />
       <ComponentRef Id="NoticeComponent" />
     </Feature>
