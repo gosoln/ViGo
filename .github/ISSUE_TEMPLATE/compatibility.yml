@@ -1,0 +1,43 @@
+name: Không tương thích với ứng dụng / App compatibility
+description: ViGo hoạt động sai chỉ trong một ứng dụng hoặc trang web cụ thể / Works elsewhere but not in one app
+labels: [compatibility, needs-triage]
+body:
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Nền tảng / Platform
+      options: [macOS, Windows, "Linux (IBus)", "Linux (Fcitx5)"]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản ViGo / ViGo version
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Ứng dụng hoặc trang web / Application or site
+      description: Tên, phiên bản, và trình duyệt nếu là web (ví dụ Google Docs trên Chrome 130)
+    validations:
+      required: true
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: Triệu chứng / Symptom
+      options:
+        - Gõ ra chữ sai hoặc lặp ký tự / Wrong or duplicated characters
+        - Mất chữ hoặc xóa nhầm / Characters lost or wrongly deleted
+        - Không gõ được tiếng Việt / Vietnamese input does nothing
+        - Gạch chân hoặc ô soạn thảo lạ / Odd underline or composition box
+        - Khác / Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Cách tái hiện / How to reproduce
+      description: Chỉ ghi chuỗi phím tối thiểu, không dán nội dung riêng tư / Minimal keys only, no private text.
+    validations:
+      required: true

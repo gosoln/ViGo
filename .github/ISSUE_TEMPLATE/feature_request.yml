@@ -1,0 +1,26 @@
+name: Đề xuất tính năng / Feature request
+description: Ý tưởng cải thiện ViGo / Suggest an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề bạn gặp / What problem are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Đề xuất / Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Giải pháp thay thế / Alternatives considered
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Nền tảng liên quan / Platform
+      multiple: true
+      options: [macOS, Windows, "Linux (IBus)", "Linux (Fcitx5)", "Tất cả / All"]

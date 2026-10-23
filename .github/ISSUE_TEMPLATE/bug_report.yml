@@ -1,0 +1,81 @@
+name: Báo lỗi / Bug report
+description: ViGo gõ sai, không gõ được, hoặc bị treo / ViGo produces wrong text or fails
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã báo lỗi. **Đừng dán nội dung riêng tư bạn đã gõ** (mật khẩu, tin nhắn...). Chỉ cần chuỗi phím tối thiểu để tái hiện lỗi.
+        Thanks for reporting. **Do not paste private text you typed.** Give only the shortest key sequence that reproduces the problem.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Nền tảng / Platform
+      options: [macOS, Windows, "Linux (IBus)", "Linux (Fcitx5)"]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản ViGo / ViGo version
+      description: Ví dụ 2.0.0 (build 31)
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Phiên bản hệ điều hành / OS version
+      description: Ví dụ macOS 15.1, Windows 11 23H2, Ubuntu 24.04 + GNOME/KDE
+    validations:
+      required: true
+  - type: dropdown
+    id: method
+    attributes:
+      label: Kiểu gõ / Typing method
+      options: [Telex, VNI]
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Ứng dụng bị lỗi / Application where it happens
+      description: Tên và phiên bản, ví dụ Chrome 130, VS Code 1.95, Terminal
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện / Steps to reproduce
+      description: Ghi chính xác các phím đã bấm / List the exact keys pressed.
+      placeholder: |
+        1. Mở ...
+        2. Gõ: t i e e n g s
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi / Expected result
+      placeholder: tiếng
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Kết quả thực tế / Actual result
+      placeholder: tieengs
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Đã kiểm tra / Checked
+      options:
+        - label: Tôi đã thử trên phiên bản mới nhất / I tried the latest release
+        - label: Tôi đã tìm issue trùng lặp / I searched existing issues
+        - label: Lỗi không nằm trong ứng dụng đã bị tắt ViGo (Tùy chọn → Ứng dụng loại trừ) / The app is not on ViGo's exclusion list
+  - type: textarea
+    id: extra
+    attributes:
+      label: Thông tin thêm / Additional context
+      description: Ảnh chụp màn hình, quyền Accessibility/Input Monitoring trên macOS, thông tin khác. Không dán dữ liệu cá nhân.
