@@ -96,7 +96,9 @@ jobs:
       - run: >-
           dnf install -y gcc-c++ cmake ninja-build pkgconf-pkg-config
           ibus-devel fcitx5-devel extra-cmake-modules rpm-build rustup
-      - run: rustup toolchain install 1.98.0 --profile minimal && rustup default 1.98.0
+      # Fedora's rustup package ships only rustup-init.
+      - run: rustup-init -y --default-toolchain 1.98.0 --profile minimal
+      - run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
       - run: cargo build -p vigo-core --release
       - run: >-
           cmake -S platform/linux -B build/linux-fedora -G Ninja

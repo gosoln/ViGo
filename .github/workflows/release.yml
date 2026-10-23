@@ -1,0 +1,146 @@
+name: Release
+
+# Push a tag such as v2.0.0-rc.1 to build every platform package and open a
+# draft GitHub Release. Review the draft, then publish it from the web UI.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (must already exist), for example v2.0.0-rc.1
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  macos:
+    name: macOS package
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      - run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+      - run: platform/macos/scripts/package-app.sh
+      - run: platform/macos/scripts/verify-package-structure.sh build/ViGo.app dist/ViGo-*.pkg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.pkg
+          if-no-files-found: error
+
+  linux-deb:
+    name: Linux .deb (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - run: >-
+          sudo apt-get update && sudo apt-get install -y
+          ninja-build pkg-config libibus-1.0-dev libfcitx5core-dev
+          libfcitx5config-dev libfcitx5utils-dev extra-cmake-modules
+      - run: platform/linux/scripts/build-release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: dist/linux/*.deb
+          if-no-files-found: error
+
+  linux-rpm:
+    name: Linux .rpm (Fedora 44)
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - run: >-
+          dnf install -y gcc-c++ cmake ninja-build pkgconf-pkg-config
+          ibus-devel fcitx5-devel extra-cmake-modules rpm-build rustup
+      # Fedora's rustup package ships only rustup-init.
+      - run: rustup-init -y --default-toolchain 1.98.0 --profile minimal
+      - run: echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - run: platform/linux/scripts/build-release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: dist/linux/*.rpm
+          if-no-files-found: error
+
+  windows:
+    name: Windows MSI
+    # Requires the repository variable WIX_EULA_ACCEPTED=wix7, set only after
+    # reviewing https://docs.firegiant.com/wix/osmf/.
+    if: vars.WIX_EULA_ACCEPTED == 'wix7'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - run: platform/windows/scripts/build-release.ps1 -AcceptWix7Eula
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: platform/windows/installer/bin/Release/**/*.msi
+          if-no-files-found: error
+
+  publish:
+    name: Draft GitHub Release
+    needs: [macos, linux-deb, linux-rpm, windows]
+    if: >-
+      ${{ !cancelled() && needs.macos.result == 'success' && needs.linux-deb.result == 'success'
+      && needs.linux-rpm.result == 'success'
+      && (needs.windows.result == 'success' || needs.windows.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect files and checksums
+        run: |
+          mkdir release
+          find artifacts -type f \( -name '*.pkg' -o -name '*.msi' -o -name '*.deb' -o -name '*.rpm' \) -exec cp {} release/ \;
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Write release notes
+        run: |
+          cat > notes.md <<'EOF'
+          ViGo is a Vietnamese input method (Telex and VNI) for macOS, Windows and Linux.
+          Bộ gõ tiếng Việt Telex và VNI cho macOS, Windows và Linux.
+
+          **Unsigned build / Bản chưa ký số.** The macOS package is ad-hoc signed and the Windows
+          installer is not code-signed, so Gatekeeper or SmartScreen may warn you. Verify the
+          download against `SHA256SUMS.txt` before opening it.
+          macOS và Windows có thể cảnh báo vì bộ cài chưa ký số; hãy đối chiếu SHA-256 trước khi cài.
+
+          | Platform | File |
+          | --- | --- |
+          | macOS 13+ | `ViGo-*.pkg` |
+          | Windows 11 x64 | `ViGo-*-windows-x64.msi` (when present) |
+          | Linux, IBus | `vigo-ibus*.deb`, `vigo-ibus*.rpm` |
+          | Linux, Fcitx5 | `vigo-fcitx5*.deb`, `vigo-fcitx5*.rpm` |
+
+          Install guide: https://gosoln.github.io/ViGo/
+          EOF
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=""
+          case "$RELEASE_TAG" in *-*) flags="--prerelease" ;; esac
+          gh release create "$RELEASE_TAG" release/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "ViGo ${RELEASE_TAG#v}" \
+            --notes-file notes.md \
+            --draft $flags
