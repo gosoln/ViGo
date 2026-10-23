@@ -24,8 +24,8 @@ See [the core interface design](docs/design/core-interface.md) and [CONTRIBUTING
 Contributing
 =======
 
-* Please report issues on the [GitHub issue tracker](https://github.com/huyphan/NAKL/issues). Personal emails are not appropriate for bug reports.
-* Patches are preferred as GitHub pull requests. Contributors are welcome to request free beer from author of this project.
+* Please report bugs and request features through this repository's GitHub issue templates. Personal emails are not appropriate for bug reports. Do not paste private text you typed.
+* Patches are preferred as GitHub pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Credits
 =======
