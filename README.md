@@ -17,7 +17,7 @@ cmake -S platform/linux -B build/linux -DCMAKE_INSTALL_PREFIX=/usr \
   -DVIGO_BUILD_IBUS=ON -DVIGO_BUILD_FCITX5=ON
 ```
 
-See [the modernization plan](docs/modernization-plan.md), [platform evaluation](docs/research/cross-platform-input-method-platform-evaluation.md), and [architecture decisions](docs/adr/) before contributing to ViGo.
+See [the core interface design](docs/design/core-interface.md) and [CONTRIBUTING.md](CONTRIBUTING.md) before contributing to ViGo.
 
 * The original project homepage is [huyphan.github.com/NAKL](http://huyphan.github.com/NAKL).
 

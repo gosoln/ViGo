@@ -8,7 +8,7 @@ Use the issue templates. Include platform, ViGo version, typing method, the app 
 
 ## Development
 
-Read `CONTEXT.md` (domain terms), `docs/adr/`, and `docs/design/core-interface.md` before changing the core or the C ABI.
+Read `CONTEXT.md` (domain terms) and `docs/design/core-interface.md` before changing the core or the C ABI.
 
 ```sh
 cargo fmt --all --check

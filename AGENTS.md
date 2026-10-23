@@ -4,7 +4,7 @@
 
 `core/` is the Rust composition Module and versioned C interface; public behavior is tested in `core/tests/`. `platform/macos/` contains the native SwiftUI menu-bar/settings shell. Reviewed fixtures live in `tests/golden/`. `legacy/oracle/` drives the frozen Objective-C snapshot only for characterization data.
 
-Read `CONTEXT.md` before naming domain concepts. Read `docs/adr/` and `docs/design/core-interface.md` before changing the core seam or C ABI. `docs/modernization-plan.md` owns scope, platform order, and release gates.
+Read `CONTEXT.md` before naming domain concepts. Read `docs/design/core-interface.md` before changing the core seam or C ABI.
 
 ## Build, Test, and Development Commands
 
