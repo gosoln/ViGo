@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gosoln.github.io/ViGo/sitemap.xml

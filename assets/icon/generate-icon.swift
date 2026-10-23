@@ -206,3 +206,27 @@ try FileManager.default.createDirectory(at: flat, withIntermediateDirectories: t
 for size in [16, 22, 24, 32, 40, 48, 64, 128, 256, 512] {
   try write(bitmap(size, draw: drawFlatIcon), to: flat.appendingPathComponent("\(size).png"))
 }
+
+// Social preview card (1200x630) for the project site.
+func drawSocialCard(_ cg: CGContext) {
+  cg.setFillColor(color(0x2B2B31))
+  cg.fill(CGRect(x: 0, y: 0, width: 1200, height: 630))
+  cg.saveGState()
+  cg.translateBy(x: 90, y: 115)
+  cg.scaleBy(x: 0.4, y: 0.4)
+  drawFlatIcon(cg)
+  cg.restoreGState()
+
+  func text(_ string: String, size: CGFloat, weight: NSFont.Weight, hex: UInt32, x: CGFloat, y: CGFloat) {
+    let font = NSFont.systemFont(ofSize: size, weight: weight)
+    NSAttributedString(
+      string: string, attributes: [.font: font, .foregroundColor: NSColor(cgColor: color(hex))!]
+    ).draw(at: CGPoint(x: x, y: y))
+  }
+  text("ViGo", size: 150, weight: .heavy, hex: 0xFFFFFF, x: 560, y: 300)
+  text("Bộ gõ tiếng Việt Telex · VNI", size: 46, weight: .semibold, hex: 0xFFC83D, x: 565, y: 235)
+  text("macOS · Windows · Linux  |  Mã nguồn mở", size: 34, weight: .regular, hex: 0xC9C9D1, x: 565, y: 175)
+}
+try write(
+  bitmap(0, width: 1200, height: 630, draw: drawSocialCard),
+  to: output.appendingPathComponent("og.png"))  // copy to site/assets/og-image.png

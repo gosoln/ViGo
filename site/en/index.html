@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ViGo – Free Vietnamese Telex &amp; VNI Input Method for Mac, Windows, Linux</title>
+  <meta name="description" content="ViGo is an open-source Vietnamese input method with Telex and VNI for macOS, Windows and Linux. Fast, lightweight, and it never collects what you type. Free download.">
+  <meta name="keywords" content="Vietnamese input method, Vietnamese keyboard for Mac, Telex, VNI, Vietnamese typing macOS, Fcitx5, IBus, ViGo">
+  <link rel="canonical" href="https://gosoln.github.io/ViGo/en/">
+  <link rel="alternate" hreflang="vi" href="https://gosoln.github.io/ViGo/">
+  <link rel="alternate" hreflang="en" href="https://gosoln.github.io/ViGo/en/">
+  <link rel="alternate" hreflang="x-default" href="https://gosoln.github.io/ViGo/">
+  <meta name="theme-color" content="#3a3a41">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="../assets/favicon-64.png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ViGo">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="ViGo – Vietnamese Telex &amp; VNI Input Method for Mac, Windows, Linux">
+  <meta property="og:description" content="Open-source Vietnamese input method. Fast, lightweight, and private.">
+  <meta property="og:url" content="https://gosoln.github.io/ViGo/en/">
+  <meta property="og:image" content="https://gosoln.github.io/ViGo/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="stylesheet" href="../assets/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ViGo",
+    "alternateName": "ViGo Vietnamese Input Method",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS 13+, Windows 11 x64, Linux (IBus, Fcitx5)",
+    "description": "Open-source Vietnamese input method with Telex and VNI for macOS, Windows and Linux.",
+    "inLanguage": ["en", "vi"],
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "url": "https://gosoln.github.io/ViGo/en/",
+    "image": "https://gosoln.github.io/ViGo/assets/icon-512.png",
+    "downloadUrl": "https://github.com/gosoln/ViGo/releases/latest",
+    "codeRepository": "https://github.com/gosoln/ViGo",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="../assets/icon-512.png" alt="" width="30" height="30">ViGo</a>
+      <nav class="main" aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#download">Download</a>
+        <a href="#install">Install</a>
+        <a href="#faq">FAQ</a>
+        <a class="gh" href="https://github.com/gosoln/ViGo">GitHub</a>
+        <a class="lang" href="../" hreflang="vi" lang="vi">Tiếng Việt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <img class="logo" src="../assets/icon-512.png" alt="ViGo icon: the letter ê with a gold circumflex on a keycap" width="112" height="112">
+        <h1>A fast, light, private Vietnamese input method</h1>
+        <p class="lead">ViGo types Vietnamese with Telex and VNI on macOS, Windows and Linux. Free and open source, and it never sends your keystrokes anywhere.</p>
+        <div class="cta">
+          <a id="hero-download" class="btn primary" href="#download"
+             data-macos="Download ViGo for macOS" data-windows="Download ViGo for Windows" data-linux="Download ViGo for Linux">Free download</a>
+          <a class="btn" href="https://github.com/gosoln/ViGo">View source</a>
+        </div>
+        <p class="note">Version <span data-version>latest</span> · GPLv3 · macOS 13+, Windows 11 x64, Linux (IBus, Fcitx5)</p>
+
+        <div class="demo" aria-label="Telex typing demo">
+          <div class="label">You type</div>
+          <div class="keys" id="demo-keys">tieengs vieetj</div>
+          <div class="label" style="margin-top:10px">ViGo outputs</div>
+          <div class="out" id="demo-out">tiếng việt</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="wrap">
+        <h2>Type fast, stay out of the way</h2>
+        <p class="sub">What you need for everyday Vietnamese typing, and nothing extra.</p>
+        <div class="grid">
+          <div class="card"><h3>Telex and VNI</h3><p>Switch between the two methods from the menu or with a global hot key.</p></div>
+          <div class="card"><h3>Correct tone placement</h3><p>Tones go on the final vowel in <code>oa</code>, <code>oe</code>, <code>uy</code> by default (hoá, hoé, huý). English words such as <em>developer</em> pass through unchanged.</p></div>
+          <div class="card"><h3>Per-app control</h3><p>Exclude Terminal, code editors or games, and use a hot key to toggle ViGo for the app in front.</p></div>
+          <div class="card"><h3>Text expansion</h3><p>Keep a list of abbreviations and replacements, stored locally on your machine.</p></div>
+          <div class="card"><h3>Private by design</h3><p>What you type is processed on-device only: no network, no logs, no telemetry. ViGo passes password fields straight through.</p></div>
+          <div class="card"><h3>Rust core, open source</h3><p>The composition engine is written in Rust and tested against a reference suite and fuzzing. Licensed GPLv3.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="wrap">
+        <h2>Download ViGo <span class="badge" data-version>latest</span></h2>
+        <p class="sub">Pick the build for your system. Always download from the official Releases page and compare the SHA-256 checksum when one is provided.</p>
+        <div class="grid">
+          <div class="card dl" data-os="macos">
+            <h3>macOS</h3>
+            <p><code>.pkg</code> installer, macOS 13 or later, Apple Silicon and Intel.</p>
+            <a class="btn primary" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="\.pkg$">Download for macOS</a>
+            <div class="meta" data-size>See the Releases page</div>
+          </div>
+          <div class="card dl" data-os="windows">
+            <h3>Windows</h3>
+            <p><code>.msi</code> installer, Windows 11 x64.</p>
+            <a class="btn primary" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="\.msi$">Download for Windows</a>
+            <div class="meta" data-size>See the Releases page</div>
+          </div>
+          <div class="card dl" data-os="linux">
+            <h3>Linux</h3>
+            <p><code>.deb</code> / <code>.rpm</code> packages for IBus (GNOME, Ubuntu) or Fcitx5 (KDE and others).</p>
+            <a class="btn primary" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="vigo-ibus.*\.deb$">IBus (.deb)</a>
+            <a class="btn" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="vigo-fcitx5.*\.deb$">Fcitx5 (.deb)</a>
+            <div class="meta">The <code>.rpm</code> packages are on the Releases page.</div>
+          </div>
+        </div>
+        <p class="note">Prefer building from source? See the <a href="https://github.com/gosoln/ViGo#readme">README</a>.</p>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="wrap">
+        <h2>Install</h2>
+        <p class="sub">A few steps on each system.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>macOS</h3>
+            <ol class="steps">
+              <li>Open the <code>.pkg</code> and follow the installer, then log out and back in if asked.</li>
+              <li>Open ViGo; its icon appears in the menu bar.</li>
+              <li>When prompted, grant <strong>Accessibility</strong> access in System Settings → Privacy &amp; Security.</li>
+              <li>Keep the macOS <strong>ABC</strong> input source selected, then choose Telex or VNI in the ViGo menu.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Windows</h3>
+            <ol class="steps">
+              <li>Run the <code>.msi</code> and finish the installer.</li>
+              <li>Go to Settings → Time &amp; language → Language &amp; region, add Vietnamese if needed, then add the <strong>ViGo</strong> keyboard.</li>
+              <li>Open ViGo from the Start menu to choose Telex/VNI and hot keys.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Linux</h3>
+            <pre><code>sudo apt install ./vigo-ibus_*.deb
+ibus restart</code></pre>
+            <p>For Fcitx5, install <code>vigo-fcitx5</code> and run <code>fcitx5 -rd</code>. Then pick <strong>ViGo Telex</strong> or <strong>ViGo VNI</strong> in your input-method tool.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap">
+        <h2>FAQ</h2>
+        <details>
+          <summary>I type but no Vietnamese appears (macOS)?</summary>
+          <ul>
+            <li>Check that ViGo is listed and enabled in System Settings → Privacy &amp; Security → Accessibility.</li>
+            <li>The ViGo menu must show Telex or VNI, not Off. The menu bar icon reads <strong>VITX</strong> or <strong>VNI</strong>.</li>
+            <li>The app you are using may be on the exclusion list. The icon then shows <strong>A</strong>.</li>
+          </ul>
+        </details>
+        <details>
+          <summary>Why keep the ABC input source on macOS?</summary>
+          <p>ViGo replaces text directly in the app instead of using an underlined composition box, which is the most reliable approach. You do not need to select a ViGo input source in macOS keyboard settings for normal typing.</p>
+        </details>
+        <details>
+          <summary>macOS says the app cannot be opened?</summary>
+          <p>If macOS blocks it for security reasons, open System Settings → Privacy &amp; Security and choose <em>Open Anyway</em>. Only do this for files downloaded from the official Releases page.</p>
+        </details>
+        <details>
+          <summary>Windows shows a SmartScreen warning?</summary>
+          <p>If the installer is not code-signed, Windows may warn you. Make sure you downloaded it from the official Releases page and compare the SHA-256 before choosing Run anyway.</p>
+        </details>
+        <details>
+          <summary>Does ViGo collect what I type?</summary>
+          <p>No. Typed content is processed on-device only: it is not sent over the network and does not appear in logs. You can verify this yourself because the full source is public.</p>
+        </details>
+        <details>
+          <summary>I found a bug in one specific app. Where do I report it?</summary>
+          <p>Open an <a href="https://github.com/gosoln/ViGo/issues/new/choose">issue</a> and pick the "App compatibility" form. Share only the shortest key sequence that reproduces it, and never paste private text.</p>
+        </details>
+        <details>
+          <summary>How is ViGo different from NAKL?</summary>
+          <p>ViGo is the successor to NAKL, rewritten around a shared Rust core for macOS, Windows and Linux.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <div class="credits">
+        <strong>ViGo</strong> is released under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a>.
+        ViGo derives from <a href="https://github.com/huyphan/NAKL">NAKL</a> by Huy Phan. The key handling algorithm and key map are based on
+        <a href="http://xvnkb.sourceforge.net/">xvnkb</a> by Dao Hai Lam.
+      </div>
+      <div>
+        <a href="https://github.com/gosoln/ViGo">Source</a> ·
+        <a href="https://github.com/gosoln/ViGo/releases">Releases</a> ·
+        <a href="https://github.com/gosoln/ViGo/issues/new/choose">Report a bug</a> ·
+        <a href="https://github.com/gosoln/ViGo/discussions">Discussions</a> ·
+        <a href="https://github.com/gosoln/ViGo/security/policy">Security</a>
+      </div>
+    </div>
+  </footer>
+  <script src="../assets/app.js" defer></script>
+</body>
+</html>

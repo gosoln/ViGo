@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ViGo – Bộ gõ tiếng Việt Telex VNI miễn phí cho Mac, Windows, Linux</title>
+  <meta name="description" content="ViGo là bộ gõ tiếng Việt mã nguồn mở, hỗ trợ Telex, VNI, chạy trên macOS, Windows, Linux. Nhanh, nhẹ, không thu thập phím bấm. Tải miễn phí.">
+  <meta name="keywords" content="bộ gõ tiếng Việt, bộ gõ tiếng Việt cho Mac, Telex, VNI, gõ tiếng Việt macOS, Vietnamese input method, Fcitx5, IBus, ViGo">
+  <link rel="canonical" href="https://gosoln.github.io/ViGo/">
+  <link rel="alternate" hreflang="vi" href="https://gosoln.github.io/ViGo/">
+  <link rel="alternate" hreflang="en" href="https://gosoln.github.io/ViGo/en/">
+  <link rel="alternate" hreflang="x-default" href="https://gosoln.github.io/ViGo/">
+  <meta name="theme-color" content="#3a3a41">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="assets/favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ViGo">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:title" content="ViGo – Bộ gõ tiếng Việt Telex VNI cho Mac, Windows, Linux">
+  <meta property="og:description" content="Bộ gõ tiếng Việt mã nguồn mở, nhanh, nhẹ, không thu thập phím bấm.">
+  <meta property="og:url" content="https://gosoln.github.io/ViGo/">
+  <meta property="og:image" content="https://gosoln.github.io/ViGo/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="stylesheet" href="assets/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ViGo",
+    "alternateName": "ViGo Vietnamese Input Method",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS 13+, Windows 11 x64, Linux (IBus, Fcitx5)",
+    "description": "Bộ gõ tiếng Việt mã nguồn mở hỗ trợ Telex và VNI cho macOS, Windows và Linux.",
+    "inLanguage": ["vi", "en"],
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "url": "https://gosoln.github.io/ViGo/",
+    "image": "https://gosoln.github.io/ViGo/assets/icon-512.png",
+    "downloadUrl": "https://github.com/gosoln/ViGo/releases/latest",
+    "codeRepository": "https://github.com/gosoln/ViGo",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Bỏ qua điều hướng</a>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="./"><img src="assets/icon-512.png" alt="" width="30" height="30">ViGo</a>
+      <nav class="main" aria-label="Điều hướng chính">
+        <a href="#tinh-nang">Tính năng</a>
+        <a href="#download">Tải về</a>
+        <a href="#cai-dat">Cài đặt</a>
+        <a href="#faq">Hỏi đáp</a>
+        <a class="gh" href="https://github.com/gosoln/ViGo">GitHub</a>
+        <a class="lang" href="en/" hreflang="en" lang="en">English</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="wrap">
+        <img class="logo" src="assets/icon-512.png" alt="Biểu tượng ViGo: phím chữ ê có dấu mũ vàng" width="112" height="112">
+        <h1>Bộ gõ tiếng Việt nhanh, nhẹ, riêng tư</h1>
+        <p class="lead">ViGo gõ Telex và VNI trên macOS, Windows và Linux. Mã nguồn mở, miễn phí, và không gửi phím bạn gõ đi đâu cả.</p>
+        <div class="cta">
+          <a id="hero-download" class="btn primary" href="#download"
+             data-macos="Tải ViGo cho macOS" data-windows="Tải ViGo cho Windows" data-linux="Tải ViGo cho Linux">Tải về miễn phí</a>
+          <a class="btn" href="https://github.com/gosoln/ViGo">Xem mã nguồn</a>
+        </div>
+        <p class="note">Phiên bản <span data-version>mới nhất</span> · GPLv3 · macOS 13+, Windows 11 x64, Linux (IBus, Fcitx5)</p>
+
+        <div class="demo" aria-label="Minh họa gõ Telex">
+          <div class="label">Bạn gõ</div>
+          <div class="keys" id="demo-keys">tieengs vieetj</div>
+          <div class="label" style="margin-top:10px">ViGo cho ra</div>
+          <div class="out" id="demo-out">tiếng việt</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tinh-nang">
+      <div class="wrap">
+        <h2>Gõ nhanh, ít vướng víu</h2>
+        <p class="sub">Những gì cần cho việc gõ tiếng Việt hằng ngày, không thêm thứ thừa.</p>
+        <div class="grid">
+          <div class="card"><h3>Telex và VNI</h3><p>Chuyển nhanh giữa hai kiểu gõ bằng menu hoặc phím tắt toàn cục.</p></div>
+          <div class="card"><h3>Đặt dấu đúng chuẩn</h3><p>Mặc định đặt dấu vào nguyên âm cuối trong <code>oa</code>, <code>oe</code>, <code>uy</code> (hoá, hoé, huý). Từ tiếng Anh như <em>developer</em> được giữ nguyên.</p></div>
+          <div class="card"><h3>Tắt theo ứng dụng</h3><p>Loại trừ Terminal, trình soạn mã hay game. Một phím tắt bật/tắt ViGo cho ứng dụng đang dùng.</p></div>
+          <div class="card"><h3>Gõ tắt</h3><p>Tạo danh sách từ viết tắt và nội dung thay thế, lưu ngay trên máy bạn.</p></div>
+          <div class="card"><h3>Riêng tư</h3><p>Nội dung gõ chỉ xử lý trên máy. Không gửi qua mạng, không ghi vào log, không có telemetry. ViGo bỏ qua ô nhập mật khẩu.</p></div>
+          <div class="card"><h3>Lõi Rust, mã nguồn mở</h3><p>Bộ xử lý gõ viết bằng Rust, kiểm thử bằng bộ ca đối chiếu và fuzz. Giấy phép GPLv3.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="download">
+      <div class="wrap">
+        <h2>Tải ViGo <span class="badge" data-version>mới nhất</span></h2>
+        <p class="sub">Chọn bản cho hệ điều hành của bạn. Luôn tải từ trang Releases chính thức và đối chiếu mã SHA-256 nếu có.</p>
+        <div class="grid">
+          <div class="card dl" data-os="macos">
+            <h3>macOS</h3>
+            <p>Bộ cài <code>.pkg</code>, macOS 13 trở lên, Apple Silicon và Intel.</p>
+            <a class="btn primary" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="\.pkg$">Tải cho macOS</a>
+            <div class="meta" data-size>Xem trang Releases</div>
+          </div>
+          <div class="card dl" data-os="windows">
+            <h3>Windows</h3>
+            <p>Bộ cài <code>.msi</code>, Windows 11 x64.</p>
+            <a class="btn primary" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="\.msi$">Tải cho Windows</a>
+            <div class="meta" data-size>Xem trang Releases</div>
+          </div>
+          <div class="card dl" data-os="linux">
+            <h3>Linux</h3>
+            <p>Gói <code>.deb</code> / <code>.rpm</code> cho IBus (GNOME, Ubuntu) hoặc Fcitx5 (KDE và các môi trường khác).</p>
+            <a class="btn primary" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="vigo-ibus.*\.deb$">IBus (.deb)</a>
+            <a class="btn" href="https://github.com/gosoln/ViGo/releases/latest" data-asset="vigo-fcitx5.*\.deb$">Fcitx5 (.deb)</a>
+            <div class="meta">Bản <code>.rpm</code> có trên trang Releases.</div>
+          </div>
+        </div>
+        <p class="note">Muốn tự biên dịch? Xem hướng dẫn trong <a href="https://github.com/gosoln/ViGo#readme">README</a>.</p>
+      </div>
+    </section>
+
+    <section id="cai-dat">
+      <div class="wrap">
+        <h2>Cài đặt</h2>
+        <p class="sub">Vài bước cho mỗi hệ điều hành.</p>
+        <div class="grid">
+          <div class="card">
+            <h3>macOS</h3>
+            <ol class="steps">
+              <li>Mở file <code>.pkg</code> và làm theo hướng dẫn, rồi đăng xuất và đăng nhập lại nếu được yêu cầu.</li>
+              <li>Mở ViGo, biểu tượng xuất hiện trên thanh menu.</li>
+              <li>Khi được hỏi, cấp quyền <strong>Accessibility</strong> trong Cài đặt hệ thống → Quyền riêng tư &amp; Bảo mật.</li>
+              <li>Giữ nguồn nhập <strong>ABC</strong> của macOS, rồi chọn Telex hoặc VNI trong menu ViGo.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Windows</h3>
+            <ol class="steps">
+              <li>Chạy file <code>.msi</code> và hoàn tất cài đặt.</li>
+              <li>Vào Cài đặt → Thời gian &amp; ngôn ngữ → Ngôn ngữ &amp; khu vực, thêm ngôn ngữ Tiếng Việt nếu chưa có, rồi thêm bàn phím <strong>ViGo</strong>.</li>
+              <li>Mở ViGo từ menu Start để chọn Telex/VNI và phím tắt.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>Linux</h3>
+            <pre><code>sudo apt install ./vigo-ibus_*.deb
+ibus restart</code></pre>
+            <p>Với Fcitx5, cài <code>vigo-fcitx5</code> rồi chạy <code>fcitx5 -rd</code>. Sau đó chọn <strong>ViGo Telex</strong> hoặc <strong>ViGo VNI</strong> trong công cụ chọn bộ gõ.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="wrap">
+        <h2>Hỏi đáp</h2>
+        <details>
+          <summary>Tôi gõ nhưng không ra tiếng Việt (macOS)?</summary>
+          <ul>
+            <li>Kiểm tra ViGo đã có trong Cài đặt hệ thống → Quyền riêng tư &amp; Bảo mật → Accessibility và được bật.</li>
+            <li>Menu ViGo phải đang chọn Telex hoặc VNI, không phải Tắt. Biểu tượng trên thanh menu sẽ hiện <strong>VITX</strong> hoặc <strong>VNI</strong>.</li>
+            <li>Ứng dụng bạn đang dùng có thể nằm trong danh sách loại trừ. Biểu tượng khi đó hiện chữ <strong>A</strong>.</li>
+          </ul>
+        </details>
+        <details>
+          <summary>Vì sao nên giữ nguồn nhập ABC trên macOS?</summary>
+          <p>ViGo thay chữ trực tiếp trong ứng dụng thay vì dùng ô soạn thảo có gạch chân, nên cách này cho kết quả ổn định nhất. Bạn không cần chọn nguồn nhập ViGo trong cài đặt bàn phím của macOS để gõ bình thường.</p>
+        </details>
+        <details>
+          <summary>macOS báo không mở được ứng dụng?</summary>
+          <p>Nếu macOS chặn vì lý do bảo mật, bạn vào Cài đặt hệ thống → Quyền riêng tư &amp; Bảo mật rồi chọn <em>Vẫn mở</em>. Chỉ làm vậy với file tải từ trang Releases chính thức.</p>
+        </details>
+        <details>
+          <summary>Windows hiện cảnh báo SmartScreen?</summary>
+          <p>Nếu bộ cài chưa được ký số, Windows có thể cảnh báo. Hãy chắc rằng bạn tải từ trang Releases chính thức và đối chiếu SHA-256 trước khi chọn Run anyway.</p>
+        </details>
+        <details>
+          <summary>ViGo có thu thập những gì tôi gõ không?</summary>
+          <p>Không. Nội dung gõ chỉ được xử lý trên máy, không gửi qua mạng và không nằm trong log. Bạn có thể tự kiểm chứng vì toàn bộ mã nguồn công khai.</p>
+        </details>
+        <details>
+          <summary>Tôi gặp lỗi ở một ứng dụng cụ thể, báo ở đâu?</summary>
+          <p>Mở một <a href="https://github.com/gosoln/ViGo/issues/new/choose">issue</a> và chọn mẫu "Không tương thích với ứng dụng". Chỉ ghi chuỗi phím tối thiểu để tái hiện lỗi, đừng dán nội dung riêng tư.</p>
+        </details>
+        <details>
+          <summary>ViGo khác gì NAKL?</summary>
+          <p>ViGo là phiên bản kế thừa của NAKL, được viết lại với lõi Rust dùng chung cho macOS, Windows và Linux.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap cols">
+      <div class="credits">
+        <strong>ViGo</strong> phát hành theo giấy phép <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a>.
+        ViGo kế thừa <a href="https://github.com/huyphan/NAKL">NAKL</a> của Huy Phan. Thuật toán xử lý phím và bảng ánh xạ dựa trên
+        <a href="http://xvnkb.sourceforge.net/">xvnkb</a> của Đào Hải Lâm.
+      </div>
+      <div>
+        <a href="https://github.com/gosoln/ViGo">Mã nguồn</a> ·
+        <a href="https://github.com/gosoln/ViGo/releases">Releases</a> ·
+        <a href="https://github.com/gosoln/ViGo/issues/new/choose">Báo lỗi</a> ·
+        <a href="https://github.com/gosoln/ViGo/discussions">Thảo luận</a> ·
+        <a href="https://github.com/gosoln/ViGo/security/policy">Bảo mật</a>
+      </div>
+    </div>
+  </footer>
+  <script src="assets/app.js" defer></script>
+</body>
+</html>
