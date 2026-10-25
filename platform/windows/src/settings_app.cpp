@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <cwchar>
 #include <string>
 #include <string_view>
@@ -25,6 +26,24 @@ constexpr int AppIconResourceId = 1; // matches resources/vigo.rc
 constexpr UINT TrayMessage = WM_APP + 1;
 constexpr UINT ShowSettingsMessage = WM_APP + 2;
 constexpr UINT TrayId = 1;
+constexpr UINT BaseDpi = USER_DEFAULT_SCREEN_DPI;
+
+// Windows lists an enabled keyboard as a value named "<LANGID>:{CLSID}{ProfileGUID}" under
+// HKCU\Control Panel\International\User Profile\<language tag>. These identifiers match the
+// text service and profile that registration.cpp installs.
+constexpr wchar_t InputMethodTip[] =
+    L"042A:{027A6B19-4551-46F7-B8FD-FB09AE4135BA}{6DFD5E1A-DE07-49D4-B3AE-BD420B160656}";
+constexpr wchar_t UserProfileKeyPath[] = L"Control Panel\\International\\User Profile";
+constexpr wchar_t EnableInputMethodArguments[] =
+    L"-NoProfile -ExecutionPolicy Bypass -Command \""
+    L"$tip='042A:{027A6B19-4551-46F7-B8FD-FB09AE4135BA}{6DFD5E1A-DE07-49D4-B3AE-BD420B160656}'; "
+    L"$list=Get-WinUserLanguageList; "
+    L"$vi=$list | Where-Object { $_.LanguageTag -like 'vi*' }; "
+    L"if ($null -eq $vi) { $vi=(New-WinUserLanguageList vi)[0]; $vi.InputMethodTips.Clear(); "
+    L"$list.Add($vi) }; "
+    L"if (-not $vi.InputMethodTips.Contains($tip)) { $vi.InputMethodTips.Add($tip) }; "
+    L"Set-WinUserLanguageList $list -Force\"";
+constexpr DWORD EnableInputMethodTimeoutMs = 120'000;
 
 enum ControlId : int
 {
@@ -43,6 +62,9 @@ enum ControlId : int
     SwitchHotKeyVirtualKey = 133,
     ApplyHotKeys = 134,
     HotKeyStatus = 135,
+    InputMethodStatus = 140,
+    EnableInputMethod = 141,
+    OpenLanguageSettings = 142,
     ExpansionShortcut = 120,
     ExpansionReplacement = 121,
     ExpansionAdd = 122,
@@ -53,19 +75,66 @@ enum ControlId : int
     MenuDisabled = 202,
     MenuSettings = 203,
     MenuExit = 204,
+    MenuState = 205,
+};
+
+enum class Page : std::size_t
+{
+    General = 0,
+    Expansions = 1,
+    System = 2,
+    About = 3,
+};
+constexpr std::size_t PageCount = 4;
+
+enum class FontRole
+{
+    Message,
+    Title,
+};
+
+// Logical layout at 96 DPI. Every value is scaled with the window DPI when applied.
+constexpr int WindowMargin = 12;
+constexpr int PagePadding = 12;
+constexpr int ContentWidth = 540;
+constexpr int TabWidth = ContentWidth + 2 * PagePadding + 4;
+constexpr int TabHeight = 416;
+constexpr int DropDownHeight = 200;
+constexpr int ExpansionTriggerColumnWidth = 160;
+
+struct ControlLayout
+{
+    HWND handle = nullptr;
+    int x = 0;
+    int y = 0;
+    int width = 0;
+    int height = 0;
+    FontRole font = FontRole::Message;
 };
 
 struct AppState
 {
     HWND window = nullptr;
     HWND tab = nullptr;
-    std::array<std::vector<HWND>, 3> pages;
+    UINT dpi = BaseDpi;
+    HFONT message_font = nullptr;
+    HFONT title_font = nullptr;
+    std::array<std::vector<HWND>, PageCount> pages;
+    std::vector<ControlLayout> layouts;
+    COLORREF input_method_status_color = 0;
+    bool enabling_input_method = false;
+    bool tray_added = false;
     SettingsSnapshot settings;
     NOTIFYICONDATAW tray{};
 };
 
 constexpr int ToggleHotKeyId = 1;
 constexpr int SwitchHotKeyId = 2;
+
+[[nodiscard]] int Scale(const AppState &state, int value)
+{
+    return MulDiv(value, static_cast<int>(state.dpi), static_cast<int>(BaseDpi));
+}
 
 [[nodiscard]] std::wstring WindowText(HWND control)
 {
@@ -83,23 +152,114 @@ constexpr int SwitchHotKeyId = 2;
     return value;
 }
 
-void UseDefaultFont(HWND control)
+// The system message font (Segoe UI 9pt on Windows 10/11) at the requested DPI.
+[[nodiscard]] HFONT CreateMessageFont(UINT dpi, int size_percent, int weight)
 {
-    SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),
-                 TRUE);
+    LOGFONTW font{};
+    NONCLIENTMETRICSW metrics{};
+    metrics.cbSize = sizeof(metrics);
+    if (SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0, dpi) !=
+        FALSE)
+    {
+        font = metrics.lfMessageFont;
+    }
+    else
+    {
+        wcscpy_s(font.lfFaceName, L"Segoe UI");
+        font.lfHeight = -MulDiv(9, static_cast<int>(dpi), 72);
+        font.lfCharSet = DEFAULT_CHARSET;
+    }
+    font.lfHeight = MulDiv(font.lfHeight, size_percent, 100);
+    if (weight != 0)
+    {
+        font.lfWeight = weight;
+    }
+    font.lfQuality = CLEARTYPE_QUALITY;
+    HFONT created = CreateFontIndirectW(&font);
+    return created != nullptr ? created : static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
 }
 
-HWND AddControl(AppState &state, std::size_t page, const wchar_t *class_name, const wchar_t *text,
-                DWORD style, int x, int y, int width, int height, int identifier)
+[[nodiscard]] HFONT FontFor(const AppState &state, FontRole role)
+{
+    return role == FontRole::Title ? state.title_font : state.message_font;
+}
+
+void ApplyFonts(AppState &state)
+{
+    SendMessageW(state.tab, WM_SETFONT, reinterpret_cast<WPARAM>(state.message_font), TRUE);
+    for (const ControlLayout &layout : state.layouts)
+    {
+        SendMessageW(layout.handle, WM_SETFONT,
+                     reinterpret_cast<WPARAM>(FontFor(state, layout.font)), TRUE);
+    }
+}
+
+void RecreateFonts(AppState &state)
+{
+    HFONT previous_message = state.message_font;
+    HFONT previous_title = state.title_font;
+    state.message_font = CreateMessageFont(state.dpi, 100, 0);
+    state.title_font = CreateMessageFont(state.dpi, 240, FW_SEMIBOLD);
+    ApplyFonts(state);
+    // Stock objects ignore DeleteObject, so the fallback font is safe here.
+    if (previous_message != nullptr)
+    {
+        DeleteObject(previous_message);
+    }
+    if (previous_title != nullptr)
+    {
+        DeleteObject(previous_title);
+    }
+}
+
+// Positions every control from the logical layout and sizes the frame to fit. `origin` is the
+// new top-left corner (used for WM_DPICHANGED); null keeps the current position.
+void ApplyLayout(AppState &state, const POINT *origin)
+{
+    const int margin = Scale(state, WindowMargin);
+    const int tab_width = Scale(state, TabWidth);
+    const int tab_height = Scale(state, TabHeight);
+    SetWindowPos(state.tab, nullptr, margin, margin, tab_width, tab_height,
+                 SWP_NOZORDER | SWP_NOACTIVATE);
+
+    RECT display{0, 0, tab_width, tab_height};
+    TabCtrl_AdjustRect(state.tab, FALSE, &display);
+    const int page_x = margin + display.left + Scale(state, PagePadding);
+    const int page_y = margin + display.top + Scale(state, PagePadding);
+    for (const ControlLayout &layout : state.layouts)
+    {
+        SetWindowPos(layout.handle, nullptr, page_x + Scale(state, layout.x),
+                     page_y + Scale(state, layout.y), Scale(state, layout.width),
+                     Scale(state, layout.height), SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+
+    HWND expansions = GetDlgItem(state.window, ExpansionList);
+    ListView_SetColumnWidth(expansions, 0, Scale(state, ExpansionTriggerColumnWidth));
+    ListView_SetColumnWidth(expansions, 1, LVSCW_AUTOSIZE_USEHEADER);
+
+    RECT frame{0, 0, 2 * margin + tab_width, 2 * margin + tab_height};
+    const DWORD style = static_cast<DWORD>(GetWindowLongPtrW(state.window, GWL_STYLE));
+    const DWORD ex_style = static_cast<DWORD>(GetWindowLongPtrW(state.window, GWL_EXSTYLE));
+    AdjustWindowRectExForDpi(&frame, style, FALSE, ex_style, state.dpi);
+    const UINT flags = SWP_NOZORDER | SWP_NOACTIVATE | (origin == nullptr ? SWP_NOMOVE : 0u);
+    SetWindowPos(state.window, nullptr, origin == nullptr ? 0 : origin->x,
+                 origin == nullptr ? 0 : origin->y, frame.right - frame.left,
+                 frame.bottom - frame.top, flags);
+}
+
+HWND AddControl(AppState &state, Page page, const wchar_t *class_name, const wchar_t *text,
+                DWORD style, DWORD ex_style, const ControlLayout &layout, int identifier)
 {
     HWND control =
-        CreateWindowExW(0, class_name, text, WS_CHILD | style, x, y, width, height, state.window,
-                        reinterpret_cast<HMENU>(static_cast<INT_PTR>(identifier)),
+        CreateWindowExW(ex_style, class_name, text, WS_CHILD | WS_CLIPSIBLINGS | style, 0, 0, 0, 0,
+                        state.window, reinterpret_cast<HMENU>(static_cast<INT_PTR>(identifier)),
                         GetModuleHandleW(nullptr), nullptr);
     if (control != nullptr)
     {
-        UseDefaultFont(control);
-        state.pages[page].push_back(control);
+        ControlLayout stored = layout;
+        stored.handle = control;
+        state.layouts.push_back(stored);
+        state.pages[static_cast<std::size_t>(page)].push_back(control);
     }
     return control;
 }
@@ -210,18 +370,160 @@ bool RegisterConfiguredHotKeys(AppState &state)
     return true;
 }
 
+// Reads the per-user keyboard list that Windows shows under Settings > Time & language.
+[[nodiscard]] bool IsInputMethodInstalled()
+{
+    HKEY profiles = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, UserProfileKeyPath, 0, KEY_READ, &profiles) !=
+        ERROR_SUCCESS)
+    {
+        return false;
+    }
+    bool installed = false;
+    for (DWORD index = 0; !installed; ++index)
+    {
+        std::array<wchar_t, 256> language{};
+        DWORD length = static_cast<DWORD>(language.size());
+        if (RegEnumKeyExW(profiles, index, language.data(), &length, nullptr, nullptr, nullptr,
+                          nullptr) != ERROR_SUCCESS)
+        {
+            break;
+        }
+        DWORD size = 0;
+        installed = RegGetValueW(profiles, language.data(), InputMethodTip, RRF_RT_ANY, nullptr,
+                                 nullptr, &size) == ERROR_SUCCESS;
+    }
+    RegCloseKey(profiles);
+    return installed;
+}
+
+bool RefreshInputMethodStatus(AppState &state)
+{
+    const bool installed = IsInputMethodInstalled();
+    HWND status = GetDlgItem(state.window, InputMethodStatus);
+    SetWindowTextW(status, installed ? L"ViGo đã có trong danh sách bàn phím Windows. "
+                                       L"Nhấn Win+Space để chuyển."
+                                     : L"ViGo chưa được bật trong Windows. "
+                                       L"Nhấn nút bên dưới để thêm ViGo vào danh sách bàn phím.");
+    state.input_method_status_color = installed ? RGB(16, 124, 16) : RGB(196, 43, 28);
+    EnableWindow(GetDlgItem(state.window, EnableInputMethod), installed ? FALSE : TRUE);
+    InvalidateRect(status, nullptr, TRUE);
+    return installed;
+}
+
+// Adds the ViGo keyboard to the user's language list through PowerShell (non-elevated, hidden
+// console) and pumps messages while waiting so the window stays responsive.
+void EnableInputMethodInWindows(AppState &state)
+{
+    if (state.enabling_input_method)
+    {
+        return;
+    }
+    SHELLEXECUTEINFOW info{};
+    info.cbSize = sizeof(info);
+    info.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
+    info.hwnd = state.window;
+    info.lpVerb = L"open";
+    info.lpFile = L"powershell.exe";
+    info.lpParameters = EnableInputMethodArguments;
+    info.nShow = SW_HIDE;
+    if (ShellExecuteExW(&info) == FALSE || info.hProcess == nullptr)
+    {
+        MessageBoxW(state.window,
+                    L"Không thể chạy PowerShell để bật ViGo. Hãy mở Cài đặt ngôn ngữ và thêm bàn "
+                    L"phím ViGo thủ công.",
+                    L"ViGo", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    state.enabling_input_method = true;
+    HWND status = GetDlgItem(state.window, InputMethodStatus);
+    EnableWindow(GetDlgItem(state.window, EnableInputMethod), FALSE);
+    SetWindowTextW(status, L"Đang bật ViGo trong Windows…");
+    state.input_method_status_color = GetSysColor(COLOR_GRAYTEXT);
+    InvalidateRect(status, nullptr, TRUE);
+
+    const ULONGLONG deadline = GetTickCount64() + EnableInputMethodTimeoutMs;
+    bool finished = false;
+    bool quitting = false;
+    while (!finished && !quitting)
+    {
+        const ULONGLONG now = GetTickCount64();
+        const DWORD remaining = now >= deadline ? 0 : static_cast<DWORD>(deadline - now);
+        const DWORD wait =
+            MsgWaitForMultipleObjects(1, &info.hProcess, FALSE, remaining, QS_ALLINPUT);
+        if (wait == WAIT_OBJECT_0)
+        {
+            finished = true;
+        }
+        else if (wait == WAIT_OBJECT_0 + 1)
+        {
+            MSG message{};
+            while (!quitting && PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE))
+            {
+                if (message.message == WM_QUIT)
+                {
+                    PostQuitMessage(static_cast<int>(message.wParam));
+                    quitting = true;
+                }
+                else
+                {
+                    TranslateMessage(&message);
+                    DispatchMessageW(&message);
+                }
+            }
+        }
+        else
+        {
+            break; // timeout or wait failure
+        }
+    }
+
+    DWORD exit_code = 1;
+    if (finished)
+    {
+        GetExitCodeProcess(info.hProcess, &exit_code);
+    }
+    else
+    {
+        TerminateProcess(info.hProcess, 1);
+    }
+    CloseHandle(info.hProcess);
+    state.enabling_input_method = false;
+    if (quitting || IsWindow(state.window) == FALSE)
+    {
+        return;
+    }
+    const bool installed = RefreshInputMethodStatus(state);
+    if (!finished || exit_code != 0 || !installed)
+    {
+        MessageBoxW(state.window,
+                    L"Không thể bật ViGo trong Windows. Hãy mở Cài đặt ngôn ngữ, chọn Tiếng Việt "
+                    L"và thêm bàn phím ViGo thủ công.",
+                    L"ViGo", MB_OK | MB_ICONERROR);
+    }
+}
+
 void RefreshExpansionList(AppState &state)
 {
     HWND list = GetDlgItem(state.window, ExpansionList);
-    SendMessageW(list, LB_RESETCONTENT, 0, 0);
+    ListView_DeleteAllItems(list);
+    int row = 0;
     for (const auto &expansion : state.settings.expansions)
     {
-        const auto trigger = Utf8ToWide(expansion.trigger);
-        const auto replacement = Utf8ToWide(expansion.replacement);
+        auto trigger = Utf8ToWide(expansion.trigger);
+        auto replacement = Utf8ToWide(expansion.replacement);
         if (trigger.has_value() && replacement.has_value())
         {
-            const std::wstring row = *trigger + L"  →  " + *replacement;
-            SendMessageW(list, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(row.c_str()));
+            LVITEMW item{};
+            item.mask = LVIF_TEXT;
+            item.iItem = row;
+            item.pszText = trigger->data();
+            if (ListView_InsertItem(list, &item) != -1)
+            {
+                ListView_SetItemText(list, row, 1, replacement->data());
+                ++row;
+            }
         }
     }
 }
@@ -257,6 +559,25 @@ void RefreshGeneralControls(AppState &state)
     RefreshExcludedList(state);
 }
 
+[[nodiscard]] const wchar_t *StateLabel(const SettingsSnapshot &settings)
+{
+    if (!settings.enabled)
+    {
+        return L"Đang tắt";
+    }
+    return settings.method == TypingMethod::Telex ? L"Telex" : L"VNI";
+}
+
+void UpdateTrayState(AppState &state)
+{
+    const std::wstring tip = std::wstring(L"ViGo – ") + StateLabel(state.settings);
+    wcscpy_s(state.tray.szTip, tip.c_str());
+    if (state.tray_added)
+    {
+        Shell_NotifyIconW(NIM_MODIFY, &state.tray);
+    }
+}
+
 bool Persist(AppState &state, bool refresh_hot_keys = true)
 {
     if (!SaveSettings(state.settings))
@@ -268,6 +589,7 @@ bool Persist(AppState &state, bool refresh_hot_keys = true)
     SendMessageTimeoutW(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
                         reinterpret_cast<LPARAM>(L"Software\\ViGo"), SMTO_ABORTIFHUNG, 100,
                         &ignored);
+    UpdateTrayState(state);
     if (refresh_hot_keys)
     {
         static_cast<void>(RegisterConfiguredHotKeys(state));
@@ -281,6 +603,17 @@ void ShowSettings(AppState &state)
     RefreshGeneralControls(state);
     RefreshExpansionList(state);
     RegisterConfiguredHotKeys(state);
+    UpdateTrayState(state);
+    if (!state.enabling_input_method)
+    {
+        RefreshInputMethodStatus(state);
+    }
+    if (const UINT dpi = GetDpiForWindow(state.window); dpi != 0 && dpi != state.dpi)
+    {
+        state.dpi = dpi;
+        RecreateFonts(state);
+        ApplyLayout(state, nullptr);
+    }
     ShowWindow(state.window, SW_SHOW);
     SetForegroundWindow(state.window);
 }
@@ -293,26 +626,30 @@ void ShowTrayMenu(AppState &state)
         return;
     }
     state.settings = LoadSettings();
-    AppendMenuW(menu,
-                MF_STRING | (state.settings.enabled && state.settings.method == TypingMethod::Telex
-                                 ? MF_CHECKED
-                                 : 0),
-                MenuTelex, L"Telex");
-    AppendMenuW(
-        menu,
-        MF_STRING |
-            (state.settings.enabled && state.settings.method == TypingMethod::Vni ? MF_CHECKED : 0),
-        MenuVni, L"VNI");
-    AppendMenuW(menu, MF_STRING | (!state.settings.enabled ? MF_CHECKED : 0), MenuDisabled, L"Tắt");
+    UpdateTrayState(state);
+
+    const std::wstring heading = std::wstring(L"ViGo · ") + StateLabel(state.settings);
+    AppendMenuW(menu, MF_STRING | MF_DISABLED | MF_GRAYED, MenuState, heading.c_str());
+    AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(menu, MF_STRING, MenuTelex, L"Telex");
+    AppendMenuW(menu, MF_STRING, MenuVni, L"VNI");
+    AppendMenuW(menu, MF_STRING, MenuDisabled, L"Tắt");
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(menu, MF_STRING, MenuSettings, L"Tùy chọn…");
     AppendMenuW(menu, MF_STRING, MenuExit, L"Thoát");
+
+    const UINT selected = !state.settings.enabled                        ? MenuDisabled
+                          : state.settings.method == TypingMethod::Telex ? MenuTelex
+                                                                         : MenuVni;
+    CheckMenuRadioItem(menu, MenuTelex, MenuDisabled, selected, MF_BYCOMMAND);
+    SetMenuDefaultItem(menu, MenuSettings, FALSE);
 
     POINT cursor{};
     GetCursorPos(&cursor);
     SetForegroundWindow(state.window);
     TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_BOTTOMALIGN | TPM_LEFTALIGN, cursor.x, cursor.y, 0,
                    state.window, nullptr);
+    PostMessageW(state.window, WM_NULL, 0, 0);
     DestroyMenu(menu);
 }
 
@@ -409,23 +746,22 @@ void ApplyHotKeySettings(AppState &state)
 void RemoveSelected(AppState &state, int list_identifier)
 {
     HWND list = GetDlgItem(state.window, list_identifier);
-    const LRESULT selected = SendMessageW(list, LB_GETCURSEL, 0, 0);
-    if (selected == LB_ERR)
+    if (list_identifier == ExpansionList)
     {
+        const int selected = ListView_GetNextItem(list, -1, LVNI_SELECTED);
+        if (selected >= 0 && static_cast<std::size_t>(selected) < state.settings.expansions.size())
+        {
+            state.settings.expansions.erase(state.settings.expansions.begin() + selected);
+            if (Persist(state))
+            {
+                RefreshExpansionList(state);
+            }
+        }
         return;
     }
-    if (list_identifier == ExpansionList &&
-        static_cast<std::size_t>(selected) < state.settings.expansions.size())
-    {
-        state.settings.expansions.erase(state.settings.expansions.begin() +
-                                        static_cast<std::ptrdiff_t>(selected));
-        if (Persist(state))
-        {
-            RefreshExpansionList(state);
-        }
-    }
-    else if (list_identifier == ExcludedList &&
-             static_cast<std::size_t>(selected) < state.settings.excluded_executables.size())
+    const LRESULT selected = SendMessageW(list, LB_GETCURSEL, 0, 0);
+    if (list_identifier == ExcludedList && selected != LB_ERR &&
+        static_cast<std::size_t>(selected) < state.settings.excluded_executables.size())
     {
         state.settings.excluded_executables.erase(state.settings.excluded_executables.begin() +
                                                   static_cast<std::ptrdiff_t>(selected));
@@ -436,86 +772,200 @@ void RemoveSelected(AppState &state, int list_identifier)
     }
 }
 
+void AddTabItem(HWND tab, int index, const wchar_t *text)
+{
+    TCITEMW item{.mask = TCIF_TEXT};
+    item.pszText = const_cast<wchar_t *>(text);
+    TabCtrl_InsertItem(tab, index, &item);
+}
+
+HWND AddLabel(AppState &state, Page page, const wchar_t *text, int x, int y, int width, int height,
+              int identifier = -1, DWORD style = SS_LEFT)
+{
+    return AddControl(state, page, WC_STATICW, text, style, 0,
+                      {.x = x, .y = y, .width = width, .height = height}, identifier);
+}
+
+HWND AddGroupBox(AppState &state, Page page, const wchar_t *text, int y, int height)
+{
+    return AddControl(state, page, WC_BUTTONW, text, BS_GROUPBOX | WS_GROUP, 0,
+                      {.x = 0, .y = y, .width = ContentWidth, .height = height}, -1);
+}
+
+HWND AddButton(AppState &state, Page page, const wchar_t *text, DWORD style, int x, int y,
+               int width, int height, int identifier)
+{
+    return AddControl(state, page, WC_BUTTONW, text, style | WS_TABSTOP, 0,
+                      {.x = x, .y = y, .width = width, .height = height}, identifier);
+}
+
+HWND AddEdit(AppState &state, Page page, int x, int y, int width, int height, int identifier)
+{
+    return AddControl(state, page, WC_EDITW, L"", WS_TABSTOP | ES_AUTOHSCROLL, WS_EX_CLIENTEDGE,
+                      {.x = x, .y = y, .width = width, .height = height}, identifier);
+}
+
+HWND AddCombo(AppState &state, Page page, int x, int y, int width, int identifier)
+{
+    return AddControl(state, page, WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_TABSTOP | WS_VSCROLL, 0,
+                      {.x = x, .y = y, .width = width, .height = DropDownHeight}, identifier);
+}
+
+void CreateGeneralPage(AppState &state)
+{
+    constexpr Page page = Page::General;
+    constexpr int inset = 12;
+    constexpr int button_height = 26;
+
+    // Điều khiển
+    AddGroupBox(state, page, L"Điều khiển", 0, 88);
+    AddButton(state, page, L"Bật bộ gõ tiếng Việt", BS_AUTOCHECKBOX, inset, 26, 300, 20, Enabled);
+    AddLabel(state, page, L"Kiểu gõ", inset, 56, 70, 20);
+    AddButton(state, page, L"Telex", BS_AUTORADIOBUTTON | WS_GROUP, inset + 80, 54, 90, 20, Telex);
+    AddButton(state, page, L"VNI", BS_AUTORADIOBUTTON, inset + 180, 54, 90, 20, Vni);
+
+    // Phím nóng
+    constexpr int hot_keys_top = 100;
+    AddGroupBox(state, page, L"Phím nóng", hot_keys_top, 126);
+    AddLabel(state, page, L"Bật/Tắt", inset, hot_keys_top + 29, 70, 20);
+    AddCombo(state, page, inset + 80, hot_keys_top + 26, 150, ToggleHotKeyModifiers);
+    AddCombo(state, page, inset + 240, hot_keys_top + 26, 72, ToggleHotKeyVirtualKey);
+    AddLabel(state, page, L"Đổi kiểu", inset, hot_keys_top + 61, 70, 20);
+    AddCombo(state, page, inset + 80, hot_keys_top + 58, 150, SwitchHotKeyModifiers);
+    AddCombo(state, page, inset + 240, hot_keys_top + 58, 72, SwitchHotKeyVirtualKey);
+    AddButton(state, page, L"Áp dụng", BS_PUSHBUTTON, ContentWidth - inset - 96, hot_keys_top + 56,
+              96, button_height, ApplyHotKeys);
+    AddLabel(state, page, L"", inset, hot_keys_top + 94, ContentWidth - 2 * inset, 20,
+             HotKeyStatus);
+
+    // Trạng thái Windows
+    constexpr int status_top = 238;
+    AddGroupBox(state, page, L"Trạng thái Windows", status_top, 112);
+    AddLabel(state, page, L"", inset, status_top + 26, ContentWidth - 2 * inset, 36,
+             InputMethodStatus);
+    constexpr int open_width = 160;
+    constexpr int enable_width = 190;
+    AddButton(state, page, L"Bật ViGo trong Windows", BS_PUSHBUTTON,
+              ContentWidth - inset - open_width - 8 - enable_width, status_top + 70, enable_width,
+              button_height, EnableInputMethod);
+    AddButton(state, page, L"Mở cài đặt ngôn ngữ", BS_PUSHBUTTON, ContentWidth - inset - open_width,
+              status_top + 70, open_width, button_height, OpenLanguageSettings);
+}
+
+void CreateExpansionPage(AppState &state)
+{
+    constexpr Page page = Page::Expansions;
+    constexpr int button_width = 84;
+    constexpr int field_width = ContentWidth - button_width - 8;
+
+    AddLabel(state, page, L"Phím tắt", 0, 0, 160, 18);
+    AddLabel(state, page, L"Từ đầy đủ", 172, 0, 280, 18);
+    AddEdit(state, page, 0, 20, 160, 24, ExpansionShortcut);
+    AddEdit(state, page, 172, 20, field_width - 172, 24, ExpansionReplacement);
+    AddButton(state, page, L"Thêm", BS_PUSHBUTTON, field_width + 8, 19, button_width, 26,
+              ExpansionAdd);
+    HWND list = AddControl(
+        state, page, WC_LISTVIEWW, L"",
+        LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | WS_TABSTOP,
+        WS_EX_CLIENTEDGE, {.x = 0, .y = 56, .width = field_width, .height = 282}, ExpansionList);
+    if (list != nullptr)
+    {
+        ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+        LVCOLUMNW column{};
+        column.mask = LVCF_TEXT | LVCF_WIDTH;
+        column.cx = ExpansionTriggerColumnWidth;
+        column.pszText = const_cast<wchar_t *>(L"Phím tắt");
+        ListView_InsertColumn(list, 0, &column);
+        column.cx = field_width - ExpansionTriggerColumnWidth;
+        column.pszText = const_cast<wchar_t *>(L"Từ đầy đủ");
+        ListView_InsertColumn(list, 1, &column);
+    }
+    AddButton(state, page, L"Xóa", BS_PUSHBUTTON, field_width + 8, 56, button_width, 26,
+              ExpansionRemove);
+    AddLabel(state, page, L"Gõ tắt được thay thế khi nhấn dấu cách và chỉ lưu cục bộ trên máy.", 0,
+             348, ContentWidth, 18);
+}
+
+void CreateSystemPage(AppState &state)
+{
+    constexpr Page page = Page::System;
+    constexpr int inset = 12;
+    constexpr int button_width = 84;
+    constexpr int field_width = ContentWidth - 2 * inset - button_width - 8;
+
+    AddGroupBox(state, page, L"Khởi động", 0, 60);
+    AddButton(state, page, L"Tự động chạy khi đăng nhập", BS_AUTOCHECKBOX, inset, 26, 400, 20,
+              LaunchAtLogin);
+
+    constexpr int excluded_top = 72;
+    AddGroupBox(state, page, L"Ứng dụng loại trừ", excluded_top, 284);
+    AddLabel(state, page, L"ViGo tạm ngưng trong các ứng dụng này (tên file .exe, ví dụ game.exe).",
+             inset, excluded_top + 26, ContentWidth - 2 * inset, 18);
+    AddEdit(state, page, inset, excluded_top + 50, field_width, 24, ExcludedEdit);
+    AddButton(state, page, L"Thêm", BS_PUSHBUTTON, inset + field_width + 8, excluded_top + 49,
+              button_width, 26, ExcludedAdd);
+    AddControl(state, page, WC_LISTBOXW, L"",
+               WS_TABSTOP | LBS_NOTIFY | WS_VSCROLL | LBS_NOINTEGRALHEIGHT, WS_EX_CLIENTEDGE,
+               {.x = inset, .y = excluded_top + 86, .width = field_width, .height = 182},
+               ExcludedList);
+    AddButton(state, page, L"Xóa", BS_PUSHBUTTON, inset + field_width + 8, excluded_top + 86,
+              button_width, 26, ExcludedRemove);
+}
+
+void CreateAboutPage(AppState &state)
+{
+    constexpr Page page = Page::About;
+    AddControl(state, page, WC_STATICW, L"ViGo", SS_CENTER, 0,
+               {.x = 0, .y = 96, .width = ContentWidth, .height = 44, .font = FontRole::Title}, -1);
+    AddLabel(state, page, L"Phiên bản 2.0 · Windows TSF", 0, 148, ContentWidth, 20, -1, SS_CENTER);
+    AddLabel(state, page,
+             L"Bộ gõ tiếng Việt riêng tư cho macOS, Windows và Linux.\r\n"
+             L"GPL-3.0-or-later · Xử lý phím hoàn toàn trên thiết bị",
+             0, 184, ContentWidth, 44, -1, SS_CENTER);
+}
+
 bool CreateControls(AppState &state)
 {
-    state.tab = CreateWindowExW(
-        0, WC_TABCONTROLW, L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP, 16, 12, 600, 370, state.window,
-        reinterpret_cast<HMENU>(static_cast<INT_PTR>(Tab)), GetModuleHandleW(nullptr), nullptr);
+    state.tab = CreateWindowExW(0, WC_TABCONTROLW, L"",
+                                WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_CLIPSIBLINGS, 0, 0, 0, 0,
+                                state.window, reinterpret_cast<HMENU>(static_cast<INT_PTR>(Tab)),
+                                GetModuleHandleW(nullptr), nullptr);
     if (state.tab == nullptr)
     {
         return false;
     }
-    UseDefaultFont(state.tab);
-    TCITEMW item{.mask = TCIF_TEXT};
-    item.pszText = const_cast<wchar_t *>(L"Tùy chọn chung");
-    TabCtrl_InsertItem(state.tab, 0, &item);
-    item.pszText = const_cast<wchar_t *>(L"Gõ tắt");
-    TabCtrl_InsertItem(state.tab, 1, &item);
-    item.pszText = const_cast<wchar_t *>(L"Giới thiệu");
-    TabCtrl_InsertItem(state.tab, 2, &item);
+    AddTabItem(state.tab, 0, L"Cơ bản");
+    AddTabItem(state.tab, 1, L"Gõ tắt");
+    AddTabItem(state.tab, 2, L"Hệ thống");
+    AddTabItem(state.tab, 3, L"Giới thiệu");
 
-    AddControl(state, 0, WC_BUTTONW, L"Bật bộ gõ tiếng Việt", BS_AUTOCHECKBOX | WS_TABSTOP, 42, 62,
-               240, 24, Enabled);
-    AddControl(state, 0, WC_STATICW, L"Kiểu gõ", SS_LEFT, 42, 102, 100, 22, -1);
-    AddControl(state, 0, WC_BUTTONW, L"Telex", BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 150, 100,
-               90, 24, Telex);
-    AddControl(state, 0, WC_BUTTONW, L"VNI", BS_AUTORADIOBUTTON | WS_TABSTOP, 245, 100, 90, 24,
-               Vni);
-    AddControl(state, 0, WC_BUTTONW, L"Tự động chạy khi đăng nhập", BS_AUTOCHECKBOX | WS_TABSTOP,
-               42, 140, 280, 24, LaunchAtLogin);
-    AddControl(state, 0, WC_STATICW, L"Phím nóng", SS_LEFT, 42, 174, 100, 22, -1);
-    AddControl(state, 0, WC_STATICW, L"Bật/Tắt", SS_LEFT, 42, 200, 80, 22, -1);
-    AddControl(state, 0, WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_TABSTOP, 122, 196, 145, 200,
-               ToggleHotKeyModifiers);
-    AddControl(state, 0, WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_TABSTOP, 275, 196, 75, 200,
-               ToggleHotKeyVirtualKey);
-    AddControl(state, 0, WC_STATICW, L"Đổi kiểu", SS_LEFT, 42, 229, 80, 22, -1);
-    AddControl(state, 0, WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_TABSTOP, 122, 225, 145, 200,
-               SwitchHotKeyModifiers);
-    AddControl(state, 0, WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_TABSTOP, 275, 225, 75, 200,
-               SwitchHotKeyVirtualKey);
-    AddControl(state, 0, WC_BUTTONW, L"Áp dụng", BS_PUSHBUTTON | WS_TABSTOP, 362, 210, 85, 28,
-               ApplyHotKeys);
-    AddControl(state, 0, WC_STATICW, L"", SS_LEFT, 455, 205, 120, 42, HotKeyStatus);
-    AddControl(state, 0, WC_STATICW, L"Ứng dụng loại trừ (tên .exe)", SS_LEFT, 42, 258, 250, 22,
-               -1);
-    AddControl(state, 0, WC_EDITW, L"", WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 42, 280, 350, 25,
-               ExcludedEdit);
-    AddControl(state, 0, WC_BUTTONW, L"Thêm", BS_PUSHBUTTON | WS_TABSTOP, 400, 279, 80, 27,
-               ExcludedAdd);
-    AddControl(state, 0, WC_LISTBOXW, L"", WS_BORDER | WS_TABSTOP | LBS_NOTIFY | WS_VSCROLL, 42,
-               313, 438, 42, ExcludedList);
-    AddControl(state, 0, WC_BUTTONW, L"Xóa", BS_PUSHBUTTON | WS_TABSTOP, 490, 313, 80, 27,
-               ExcludedRemove);
+    CreateGeneralPage(state);
+    CreateExpansionPage(state);
+    CreateSystemPage(state);
+    CreateAboutPage(state);
 
-    AddControl(state, 1, WC_STATICW, L"Phím tắt", SS_LEFT, 42, 64, 150, 22, -1);
-    AddControl(state, 1, WC_STATICW, L"Từ đầy đủ", SS_LEFT, 210, 64, 280, 22, -1);
-    AddControl(state, 1, WC_EDITW, L"", WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 42, 88, 150, 25,
-               ExpansionShortcut);
-    AddControl(state, 1, WC_EDITW, L"", WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL, 210, 88, 280, 25,
-               ExpansionReplacement);
-    AddControl(state, 1, WC_BUTTONW, L"Thêm", BS_PUSHBUTTON | WS_TABSTOP, 500, 87, 70, 27,
-               ExpansionAdd);
-    AddControl(state, 1, WC_LISTBOXW, L"", WS_BORDER | WS_TABSTOP | LBS_NOTIFY | WS_VSCROLL, 42,
-               128, 448, 196, ExpansionList);
-    AddControl(state, 1, WC_BUTTONW, L"Xóa", BS_PUSHBUTTON | WS_TABSTOP, 500, 128, 70, 27,
-               ExpansionRemove);
-    AddControl(state, 1, WC_STATICW,
-               L"Gõ tắt được thay thế khi nhấn dấu cách và chỉ lưu cục bộ trên máy.", SS_LEFT, 42,
-               336, 520, 22, -1);
+    // Group boxes sit under their controls and the tab pane sits under everything, so the
+    // WS_CLIPSIBLINGS painting never covers a control regardless of creation order.
+    for (const ControlLayout &layout : state.layouts)
+    {
+        std::array<wchar_t, 16> class_name{};
+        GetClassNameW(layout.handle, class_name.data(), static_cast<int>(class_name.size()));
+        if (_wcsicmp(class_name.data(), WC_BUTTONW) == 0 &&
+            (GetWindowLongPtrW(layout.handle, GWL_STYLE) & BS_TYPEMASK) == BS_GROUPBOX)
+        {
+            SetWindowPos(layout.handle, HWND_BOTTOM, 0, 0, 0, 0,
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+    }
+    SetWindowPos(state.tab, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-    AddControl(state, 2, WC_STATICW, L"ViGo", SS_CENTER, 170, 98, 300, 36, -1);
-    AddControl(state, 2, WC_STATICW, L"Phiên bản 2.0 · Windows TSF", SS_CENTER, 120, 145, 400, 24,
-               -1);
-    AddControl(state, 2, WC_STATICW,
-               L"Bộ gõ tiếng Việt riêng tư cho macOS, Windows và Linux.\r\n"
-               L"GPL-3.0-or-later · Xử lý phím hoàn toàn trên thiết bị",
-               SS_CENTER, 85, 188, 470, 62, -1);
-
+    RecreateFonts(state);
+    ApplyLayout(state, nullptr);
     PopulateHotKeyCombos(state);
     RefreshGeneralControls(state);
     RefreshExpansionList(state);
     RegisterConfiguredHotKeys(state);
+    RefreshInputMethodStatus(state);
     ShowPage(state, 0);
     return true;
 }
@@ -577,8 +1027,18 @@ LRESULT HandleCommand(AppState &state, int identifier)
     case ApplyHotKeys:
         ApplyHotKeySettings(state);
         break;
+    case EnableInputMethod:
+        EnableInputMethodInWindows(state);
+        break;
+    case OpenLanguageSettings:
+        ShellExecuteW(state.window, L"open", L"ms-settings:regionlanguage", nullptr, nullptr,
+                      SW_SHOWNORMAL);
+        break;
     case MenuSettings:
         ShowSettings(state);
+        break;
+    case IDCANCEL:
+        ShowWindow(state.window, SW_HIDE);
         break;
     case MenuExit:
         DestroyWindow(state.window);
@@ -607,6 +1067,10 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w_param, LPAR
     switch (message)
     {
     case WM_CREATE:
+        if (const UINT dpi = GetDpiForWindow(window); dpi != 0)
+        {
+            state->dpi = dpi;
+        }
         return CreateControls(*state) ? 0 : -1;
     case WM_COMMAND:
         return HandleCommand(*state, LOWORD(w_param));
@@ -617,17 +1081,47 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w_param, LPAR
             ShowPage(*state, TabCtrl_GetCurSel(state->tab));
         }
         return 0;
+    case WM_CTLCOLORSTATIC: {
+        // Labels, check boxes and group boxes sit on the white tab pane.
+        HDC device = reinterpret_cast<HDC>(w_param);
+        const bool status_label =
+            reinterpret_cast<HWND>(l_param) == GetDlgItem(window, InputMethodStatus);
+        SetBkColor(device, GetSysColor(COLOR_WINDOW));
+        SetTextColor(device, status_label ? state->input_method_status_color
+                                          : GetSysColor(COLOR_WINDOWTEXT));
+        return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_WINDOW));
+    }
+    case WM_DPICHANGED: {
+        state->dpi = HIWORD(w_param);
+        RecreateFonts(*state);
+        const auto *suggested = reinterpret_cast<const RECT *>(l_param);
+        const POINT origin{suggested->left, suggested->top};
+        ApplyLayout(*state, &origin);
+        return 0;
+    }
+    case WM_ACTIVATE:
+        // The user may have just changed the keyboard list in Windows Settings.
+        if (LOWORD(w_param) != WA_INACTIVE && !state->enabling_input_method)
+        {
+            RefreshInputMethodStatus(*state);
+        }
+        return 0;
     case WM_CLOSE:
         ShowWindow(window, SW_HIDE);
         return 0;
     case TrayMessage:
-        if (LOWORD(l_param) == WM_RBUTTONUP)
+        switch (LOWORD(l_param))
         {
+        case WM_RBUTTONUP:
+        case WM_CONTEXTMENU:
             ShowTrayMenu(*state);
-        }
-        else if (LOWORD(l_param) == WM_LBUTTONDBLCLK)
-        {
+            break;
+        case WM_LBUTTONUP:
+        case WM_LBUTTONDBLCLK:
             ShowSettings(*state);
+            break;
+        default:
+            break;
         }
         return 0;
     case ShowSettingsMessage:
@@ -653,6 +1147,7 @@ LRESULT CALLBACK WindowProcedure(HWND window, UINT message, WPARAM w_param, LPAR
         UnregisterHotKey(window, ToggleHotKeyId);
         UnregisterHotKey(window, SwitchHotKeyId);
         Shell_NotifyIconW(NIM_DELETE, &state->tray);
+        state->tray_added = false;
         PostQuitMessage(0);
         return 0;
     default:
@@ -681,7 +1176,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
         return 0;
     }
 
-    INITCOMMONCONTROLSEX controls{.dwSize = sizeof(controls), .dwICC = ICC_TAB_CLASSES};
+    INITCOMMONCONTROLSEX controls{.dwSize = sizeof(controls),
+                                  .dwICC = ICC_TAB_CLASSES | ICC_LISTVIEW_CLASSES |
+                                           ICC_STANDARD_CLASSES};
     InitCommonControlsEx(&controls);
 
     WNDCLASSEXW window_class{.cbSize = sizeof(window_class)};
@@ -710,9 +1207,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
 
     AppState state;
     state.settings = LoadSettings();
+    // The final size comes from the DPI-scaled layout in WM_CREATE.
     HWND window = CreateWindowExW(
         0, WindowClassName, L"ViGo", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 650, 440, nullptr, nullptr, instance, &state);
+        CW_USEDEFAULT, CW_USEDEFAULT, 600, 480, nullptr, nullptr, instance, &state);
     if (window == nullptr)
     {
         CloseHandle(mutex);
@@ -725,8 +1223,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
     state.tray.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     state.tray.uCallbackMessage = TrayMessage;
     state.tray.hIcon = window_class.hIconSm;
-    wcscpy_s(state.tray.szTip, L"ViGo");
-    if (Shell_NotifyIconW(NIM_ADD, &state.tray) == FALSE)
+    UpdateTrayState(state);
+    state.tray_added = Shell_NotifyIconW(NIM_ADD, &state.tray) != FALSE;
+    if (!state.tray_added)
     {
         ShowSettings(state);
     }
@@ -739,8 +1238,20 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int)
     MSG message{};
     while (GetMessageW(&message, nullptr, 0, 0) > 0)
     {
+        if (IsWindowVisible(window) && IsDialogMessageW(window, &message))
+        {
+            continue;
+        }
         TranslateMessage(&message);
         DispatchMessageW(&message);
+    }
+    if (state.message_font != nullptr)
+    {
+        DeleteObject(state.message_font);
+    }
+    if (state.title_font != nullptr)
+    {
+        DeleteObject(state.title_font);
     }
     CloseHandle(mutex);
     return static_cast<int>(message.wParam);

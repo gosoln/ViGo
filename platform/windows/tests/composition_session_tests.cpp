@@ -66,14 +66,19 @@ class FakeEditor
         if (action->kind == EditAction::Kind::PassThrough)
         {
             AppendScalar(text_, scalar);
+            AppendScalar(word_, scalar);
         }
         else
         {
             const std::size_t units = Utf16UnitsForTrailingScalars(text_, action->delete_scalars);
             Expect(units <= text_.size(), "replacement must remain inside document");
+            Expect(units <= word_.size(), "replacement must stay inside the current word");
             text_.erase(text_.size() - units);
             text_.append(action->insert);
+            word_.erase(word_.size() - units);
+            word_.append(action->insert);
         }
+        Expect(session_.Text() == word_, "session text must mirror the text since the boundary");
         return *action;
     }
 
@@ -87,6 +92,8 @@ class FakeEditor
     void Boundary()
     {
         session_.Reset();
+        Expect(session_.Text().empty(), "boundary must clear the mirrored text");
+        word_.clear();
     }
 
     [[nodiscard]] const std::u16string &text() const
@@ -97,6 +104,7 @@ class FakeEditor
   private:
     CompositionSession session_;
     std::u16string text_;
+    std::u16string word_;
 };
 
 void VerifyRegression(TypingMethod method, std::u32string_view prefix, char32_t modifier,

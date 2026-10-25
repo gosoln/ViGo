@@ -1,6 +1,9 @@
 #include "settings.h"
 
+// windows.h must precede the other Windows headers; the blank line keeps tools
+// from reordering it after ktmw32.h.
 #include <windows.h>
+
 #include <ktmw32.h>
 
 #include <algorithm>
@@ -55,7 +58,9 @@ class RegistryKey final
 class TransactionHandle final
 {
   public:
-    explicit TransactionHandle(HANDLE handle) noexcept : handle_(handle) {}
+    explicit TransactionHandle(HANDLE handle) noexcept : handle_(handle)
+    {
+    }
     ~TransactionHandle()
     {
         if (handle_ != nullptr && handle_ != INVALID_HANDLE_VALUE)
@@ -322,8 +327,7 @@ bool SaveSettings(const SettingsSnapshot &settings) noexcept
             expansions.push_back(*trigger + L'\t' + *replacement);
         }
 
-        TransactionHandle transaction(
-            CreateTransaction(nullptr, nullptr, 0, 0, 0, 0, nullptr));
+        TransactionHandle transaction(CreateTransaction(nullptr, nullptr, 0, 0, 0, 0, nullptr));
         if (transaction.Get() == INVALID_HANDLE_VALUE)
         {
             return false;
@@ -333,8 +337,7 @@ bool SaveSettings(const SettingsSnapshot &settings) noexcept
             RegistryKey key;
             if (RegCreateKeyTransactedW(HKEY_CURRENT_USER, SettingsPath, 0, nullptr, 0,
                                         KEY_SET_VALUE, nullptr, key.Put(), nullptr,
-                                        transaction.Get(),
-                                        nullptr) == ERROR_SUCCESS)
+                                        transaction.Get(), nullptr) == ERROR_SUCCESS)
             {
                 written = WriteDword(key.Get(), L"TypingMethod",
                                      settings.method == TypingMethod::Vni ? 2 : 1) &&

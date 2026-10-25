@@ -1,8 +1,5 @@
 #include "edit_session.h"
 
-#include "com_ptr.h"
-
-#include <algorithm>
 #include <atomic>
 #include <limits>
 #include <new>
@@ -14,31 +11,9 @@ namespace vigo::windows
 namespace
 {
 
-[[nodiscard]] std::size_t Utf16ScalarCount(std::u16string_view text)
-{
-    std::size_t count = 0;
-    for (std::size_t index = 0; index < text.size(); ++index)
-    {
-        const char16_t unit = text[index];
-        if (unit >= 0xD800 && unit <= 0xDBFF && index + 1 < text.size() &&
-            text[index + 1] >= 0xDC00 && text[index + 1] <= 0xDFFF)
-        {
-            ++index;
-        }
-        ++count;
-    }
-    return count;
-}
-
-class ReplaceEditSession final : public ITfEditSession
+class EditSessionBase : public ITfEditSession
 {
   public:
-    ReplaceEditSession(ITfContext *context, const EditAction &action)
-        : context_(context), action_(action)
-    {
-        context_->AddRef();
-    }
-
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID interface_id, void **object) override
     {
         if (object == nullptr)
@@ -86,8 +61,82 @@ class ReplaceEditSession final : public ITfEditSession
         }
     }
 
+  protected:
+    EditSessionBase() = default;
+    virtual ~EditSessionBase() = default;
+    [[nodiscard]] virtual HRESULT Apply(TfEditCookie edit_cookie) = 0;
+
   private:
-    [[nodiscard]] HRESULT Apply(TfEditCookie edit_cookie)
+    std::atomic<ULONG> reference_count_{1};
+};
+
+[[nodiscard]] HRESULT PlaceCaretAfter(ITfContext *context, TfEditCookie edit_cookie,
+                                      ITfRange *range)
+{
+    ComPtr<ITfRange> caret;
+    HRESULT result = range->Clone(caret.Put());
+    if (FAILED(result))
+    {
+        return result;
+    }
+    result = caret->Collapse(edit_cookie, TF_ANCHOR_END);
+    if (FAILED(result))
+    {
+        return result;
+    }
+    TF_SELECTION selection{};
+    selection.range = caret.Get();
+    selection.style.ase = TF_AE_NONE;
+    selection.style.fInterimChar = FALSE;
+    return context->SetSelection(edit_cookie, 1, &selection);
+}
+
+[[nodiscard]] HRESULT ReplaceRangeText(TfEditCookie edit_cookie, ITfRange *range,
+                                       std::u16string_view text)
+{
+    if (text.size() > static_cast<std::size_t>(std::numeric_limits<LONG>::max()))
+    {
+        return E_INVALIDARG;
+    }
+    return range->SetText(edit_cookie, 0, reinterpret_cast<const wchar_t *>(text.data()),
+                          static_cast<LONG>(text.size()));
+}
+
+class CompositionEditSession final : public EditSessionBase
+{
+  public:
+    CompositionEditSession(ITfContext *context, ITfCompositionSink *sink,
+                           ComPtr<ITfComposition> &composition, std::u16string_view expected_text,
+                           std::u16string_view text, bool end_after, CompositionEditResult *outcome)
+        : context_(context), sink_(sink), composition_(composition), expected_text_(expected_text),
+          text_(text), end_after_(end_after), outcome_(outcome)
+    {
+        context_->AddRef();
+    }
+
+  private:
+    [[nodiscard]] HRESULT Apply(TfEditCookie edit_cookie) override
+    {
+        *outcome_ = CompositionEditResult::Composing;
+        if (composition_.Get() == nullptr)
+        {
+            return Start(edit_cookie);
+        }
+
+        ComPtr<ITfRange> range;
+        const HRESULT result = composition_->GetRange(range.Put());
+        if (FAILED(result) || range.Get() == nullptr)
+        {
+            return FAILED(result) ? result : E_FAIL;
+        }
+        if (!RangeHoldsExpectedText(edit_cookie, range.Get()))
+        {
+            return S_FALSE;
+        }
+        return Replace(edit_cookie, range.Get());
+    }
+
+    [[nodiscard]] HRESULT Start(TfEditCookie edit_cookie)
     {
         TF_SELECTION selection{};
         ULONG fetched = 0;
@@ -97,146 +146,148 @@ class ReplaceEditSession final : public ITfEditSession
         {
             return FAILED(result) ? result : E_FAIL;
         }
-
         ComPtr<ITfRange> selection_range;
         selection_range.Reset(selection.range);
-        BOOL empty = FALSE;
-        result = selection_range->IsEmpty(edit_cookie, &empty);
-        if (FAILED(result) || empty == FALSE)
-        {
-            return FAILED(result) ? result : S_FALSE;
-        }
-        if (action_.delete_scalars > static_cast<std::size_t>(std::numeric_limits<LONG>::max() / 2))
-        {
-            return E_INVALIDARG;
-        }
 
-        LONG delete_units = 0;
-        if (action_.delete_scalars > 0)
+        ComPtr<ITfContextComposition> context_composition;
+        result = context_->QueryInterface(IID_ITfContextComposition,
+                                          reinterpret_cast<void **>(context_composition.Put()));
+        ITfComposition *started = nullptr;
+        if (SUCCEEDED(result))
         {
-            ComPtr<ITfRange> probe;
-            result = selection_range->Clone(probe.Put());
+            result = context_composition->StartComposition(edit_cookie, selection_range.Get(),
+                                                           sink_, &started);
+        }
+        if (FAILED(result) || started == nullptr)
+        {
+            // The client does not support compositions here. Insert the text
+            // as a plain committed edit so no keystroke is lost.
+            result = ReplaceRangeText(edit_cookie, selection_range.Get(), text_);
             if (FAILED(result))
             {
                 return result;
             }
-            result = probe->Collapse(edit_cookie, TF_ANCHOR_START);
-            if (FAILED(result))
-            {
-                return result;
-            }
+            *outcome_ = CompositionEditResult::Committed;
+            return PlaceCaretAfter(context_, edit_cookie, selection_range.Get());
+        }
+        composition_.Reset(started);
 
-            const LONG requested_window = static_cast<LONG>(action_.delete_scalars * 2);
-            LONG shifted = 0;
-            result = probe->ShiftStart(edit_cookie, -requested_window, &shifted, nullptr);
-            if (FAILED(result))
-            {
-                return result;
-            }
-            if (shifted > 0)
-            {
-                return E_FAIL;
-            }
-
-            std::vector<wchar_t> preceding(static_cast<std::size_t>(-shifted));
-            ULONG read = 0;
-            if (!preceding.empty())
-            {
-                result = probe->GetText(edit_cookie, 0, preceding.data(),
-                                        static_cast<ULONG>(preceding.size()), &read);
-                if (FAILED(result))
-                {
-                    return result;
-                }
-            }
-            const auto view =
-                std::u16string_view(reinterpret_cast<const char16_t *>(preceding.data()), read);
-            if (Utf16ScalarCount(view) < action_.delete_scalars)
-            {
-                return E_FAIL;
-            }
-            delete_units =
-                static_cast<LONG>(Utf16UnitsForTrailingScalars(view, action_.delete_scalars));
-            if (delete_units == 0)
-            {
-                return E_FAIL;
-            }
-            const auto actual_before = view.substr(view.size() - delete_units);
-            if (actual_before != action_.expected_before)
-            {
-                // The caret or document changed after the session observed the
-                // pass-through keys. Never delete unrelated client text.
-                return S_FALSE;
-            }
-        }
-
-        ComPtr<ITfRange> replacement;
-        result = selection_range->Clone(replacement.Put());
-        if (FAILED(result))
+        ComPtr<ITfRange> range;
+        result = composition_->GetRange(range.Put());
+        if (FAILED(result) || range.Get() == nullptr)
         {
-            return result;
+            return FAILED(result) ? result : E_FAIL;
         }
-        result = replacement->Collapse(edit_cookie, TF_ANCHOR_START);
-        if (FAILED(result))
-        {
-            return result;
-        }
-        if (delete_units > 0)
-        {
-            LONG shifted = 0;
-            result = replacement->ShiftStart(edit_cookie, -delete_units, &shifted, nullptr);
-            if (FAILED(result) || shifted != -delete_units)
-            {
-                return FAILED(result) ? result : E_FAIL;
-            }
-        }
-
-        if (action_.insert.size() > static_cast<std::size_t>(std::numeric_limits<LONG>::max()))
-        {
-            return E_INVALIDARG;
-        }
-        result = replacement->SetText(edit_cookie, 0,
-                                      reinterpret_cast<const wchar_t *>(action_.insert.data()),
-                                      static_cast<LONG>(action_.insert.size()));
-        if (FAILED(result))
-        {
-            return result;
-        }
-        result = replacement->Collapse(edit_cookie, TF_ANCHOR_END);
-        if (FAILED(result))
-        {
-            return result;
-        }
-
-        TF_SELECTION updated_selection{};
-        updated_selection.range = replacement.Get();
-        updated_selection.style.ase = TF_AE_NONE;
-        updated_selection.style.fInterimChar = FALSE;
-        return context_->SetSelection(edit_cookie, 1, &updated_selection);
+        return Replace(edit_cookie, range.Get());
     }
 
-    ~ReplaceEditSession()
+    [[nodiscard]] bool RangeHoldsExpectedText(TfEditCookie edit_cookie, ITfRange *range)
+    {
+        std::vector<wchar_t> buffer(expected_text_.size() + 1);
+        ULONG read = 0;
+        if (FAILED(range->GetText(edit_cookie, 0, buffer.data(), static_cast<ULONG>(buffer.size()),
+                                  &read)))
+        {
+            return false;
+        }
+        return std::u16string_view(reinterpret_cast<const char16_t *>(buffer.data()), read) ==
+               expected_text_;
+    }
+
+    [[nodiscard]] HRESULT Replace(TfEditCookie edit_cookie, ITfRange *range)
+    {
+        HRESULT result = ReplaceRangeText(edit_cookie, range, text_);
+        if (FAILED(result))
+        {
+            return result;
+        }
+        result = PlaceCaretAfter(context_, edit_cookie, range);
+        if (FAILED(result))
+        {
+            return result;
+        }
+        if (end_after_ || text_.empty())
+        {
+            result = composition_->EndComposition(edit_cookie);
+            composition_.Reset();
+            *outcome_ = CompositionEditResult::Ended;
+        }
+        return result;
+    }
+
+    ~CompositionEditSession() override
     {
         context_->Release();
     }
 
-    std::atomic<ULONG> reference_count_{1};
     ITfContext *context_;
-    EditAction action_;
+    ITfCompositionSink *sink_;
+    ComPtr<ITfComposition> &composition_;
+    std::u16string expected_text_;
+    std::u16string text_;
+    bool end_after_;
+    CompositionEditResult *outcome_;
 };
+
+// Owns its own composition reference so it can run after the caller forgot it.
+class EndCompositionSession final : public EditSessionBase
+{
+  public:
+    explicit EndCompositionSession(ITfComposition *composition) : composition_(composition)
+    {
+        composition_->AddRef();
+    }
+
+  private:
+    [[nodiscard]] HRESULT Apply(TfEditCookie edit_cookie) override
+    {
+        // Finalize the text in place without touching the selection: the client
+        // owns the caret once the composition ends.
+        return composition_->EndComposition(edit_cookie);
+    }
+
+    ~EndCompositionSession() override
+    {
+        composition_->Release();
+    }
+
+    ITfComposition *composition_;
+};
+
+[[nodiscard]] HRESULT RunEditSession(ITfContext *context, TfClientId client_id,
+                                     EditSessionBase *session, DWORD flags)
+{
+    HRESULT session_result = E_FAIL;
+    const HRESULT request_result =
+        context->RequestEditSession(client_id, session, flags, &session_result);
+    if (FAILED(request_result))
+    {
+        return request_result;
+    }
+    return (flags & TF_ES_SYNC) != 0 ? session_result : request_result;
+}
 
 } // namespace
 
-HRESULT ApplyEditAction(ITfContext *context, TfClientId client_id, const EditAction &action)
+HRESULT SetCompositionText(ITfContext *context, TfClientId client_id, ITfCompositionSink *sink,
+                           ComPtr<ITfComposition> &composition, std::u16string_view expected_text,
+                           std::u16string_view text, bool end_after, CompositionEditResult *outcome)
 {
-    if (context == nullptr || action.kind != EditAction::Kind::ReplaceBefore)
+    if (context == nullptr || sink == nullptr || outcome == nullptr)
     {
         return E_INVALIDARG;
     }
-    ReplaceEditSession *edit_session = nullptr;
+    *outcome = CompositionEditResult::Composing;
+    if (composition.Get() == nullptr && text.empty())
+    {
+        *outcome = CompositionEditResult::Ended;
+        return S_OK;
+    }
+    CompositionEditSession *session = nullptr;
     try
     {
-        edit_session = new (std::nothrow) ReplaceEditSession(context, action);
+        session = new (std::nothrow) CompositionEditSession(
+            context, sink, composition, expected_text, text, end_after, outcome);
     }
     catch (const std::bad_alloc &)
     {
@@ -246,16 +297,44 @@ HRESULT ApplyEditAction(ITfContext *context, TfClientId client_id, const EditAct
     {
         return E_UNEXPECTED;
     }
-    if (edit_session == nullptr)
+    if (session == nullptr)
     {
         return E_OUTOFMEMORY;
     }
+    const HRESULT result =
+        RunEditSession(context, client_id, session, TF_ES_SYNC | TF_ES_READWRITE);
+    session->Release();
+    return result;
+}
 
-    HRESULT session_result = E_FAIL;
-    const HRESULT request_result = context->RequestEditSession(
-        client_id, edit_session, TF_ES_SYNC | TF_ES_READWRITE, &session_result);
-    edit_session->Release();
-    return FAILED(request_result) ? request_result : session_result;
+HRESULT EndComposition(ITfContext *context, TfClientId client_id,
+                       ComPtr<ITfComposition> &composition)
+{
+    if (composition.Get() == nullptr)
+    {
+        return S_OK;
+    }
+    if (context == nullptr)
+    {
+        composition.Reset();
+        return E_INVALIDARG;
+    }
+    auto *session = new (std::nothrow) EndCompositionSession(composition.Get());
+    composition.Reset();
+    if (session == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+    HRESULT result = RunEditSession(context, client_id, session, TF_ES_SYNC | TF_ES_READWRITE);
+    if (FAILED(result))
+    {
+        const HRESULT async_result =
+            RunEditSession(context, client_id, session, TF_ES_ASYNCDONTCARE | TF_ES_READWRITE);
+        // Report the synchronous failure so callers can tell the end is pending.
+        result = FAILED(async_result) ? async_result : result;
+    }
+    session->Release();
+    return result;
 }
 
 } // namespace vigo::windows

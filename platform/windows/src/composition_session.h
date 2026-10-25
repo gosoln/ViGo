@@ -67,6 +67,11 @@ class CompositionSession final
     [[nodiscard]] std::optional<EditAction> Process(InputEvent event);
     void Reset() noexcept;
 
+    // UTF-16 text the session believes it has placed since the last boundary:
+    // pass-through scalars plus ordered replacements, minus Backspaces. The TSF
+    // adapter mirrors it into the active composition range.
+    [[nodiscard]] std::u16string_view Text() const noexcept;
+
   private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

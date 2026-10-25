@@ -97,8 +97,9 @@ namespace
     }
     const std::wstring path = L"CLSID\\" + class_id;
     const LSTATUS status = RegDeleteTreeW(HKEY_CLASSES_ROOT, path.c_str());
-    return status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND ? S_OK
-                                                                            : RegistryStatus(status);
+    return status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND
+               ? S_OK
+               : RegistryStatus(status);
 }
 
 [[nodiscard]] HRESULT RegisterProfile()
@@ -122,10 +123,9 @@ namespace
 [[nodiscard]] HRESULT UnregisterProfile()
 {
     ComPtr<ITfInputProcessorProfileMgr> profile_manager;
-    const HRESULT result =
-        CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr, CLSCTX_INPROC_SERVER,
-                         IID_ITfInputProcessorProfileMgr,
-                         reinterpret_cast<void **>(profile_manager.Put()));
+    const HRESULT result = CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr,
+                                            CLSCTX_INPROC_SERVER, IID_ITfInputProcessorProfileMgr,
+                                            reinterpret_cast<void **>(profile_manager.Put()));
     if (FAILED(result))
     {
         return result;
@@ -177,9 +177,8 @@ const std::array<GUID, 4> kCategories{
     HRESULT result = S_OK;
     for (const GUID &category : kCategories)
     {
-        result = PreserveFirstFailure(
-            result,
-            category_manager->UnregisterCategory(kTextServiceClsid, category, kTextServiceClsid));
+        result = PreserveFirstFailure(result, category_manager->UnregisterCategory(
+                                                  kTextServiceClsid, category, kTextServiceClsid));
     }
     return result;
 }

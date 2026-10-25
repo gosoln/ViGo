@@ -75,6 +75,12 @@ if(WIN32)
     )
     target_include_directories(vigo_tsf PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
     target_compile_definitions(vigo_tsf PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    # Opt-in certification diagnostics: appends event kinds and HRESULTs (never
+    # Keystroke Content) to %TEMP%igo-tsf-trace.log. Never ship this build.
+    option(VIGO_DIAGNOSTIC_TRACE "Write TSF key-path diagnostics to the temp folder" OFF)
+    if(VIGO_DIAGNOSTIC_TRACE)
+        target_compile_definitions(vigo_tsf PRIVATE VIGO_DIAGNOSTIC_TRACE)
+    endif()
     if(MSVC)
         target_compile_options(vigo_tsf PRIVATE /W4 /WX /permissive- /EHsc)
     else()
@@ -92,9 +98,18 @@ if(WIN32)
     set_target_properties(vigo_tsf PROPERTIES PREFIX "" OUTPUT_NAME "ViGoTSF")
     install(TARGETS vigo_tsf RUNTIME DESTINATION bin LIBRARY DESTINATION bin)
 
-    add_executable(vigo_settings WIN32 src/settings_app.cpp resources/vigo.rc)
+    # The .manifest source is embedded by CMake (Common Controls v6 + per-monitor
+    # DPI awareness). Only the settings executable gets it; never add it to vigo_tsf.
+    add_executable(vigo_settings WIN32
+        src/settings_app.cpp
+        resources/vigo.rc
+        resources/vigo_settings.manifest
+    )
     target_include_directories(vigo_settings PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-    target_compile_definitions(vigo_settings PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_compile_definitions(vigo_settings PRIVATE
+        UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX
+        _WIN32_WINNT=0x0A00 WINVER=0x0A00
+    )
     target_link_libraries(vigo_settings PRIVATE vigo_windows_settings comctl32 shell32 user32)
     set_target_properties(vigo_settings PROPERTIES OUTPUT_NAME "ViGoSettings")
     install(TARGETS vigo_settings RUNTIME DESTINATION bin)

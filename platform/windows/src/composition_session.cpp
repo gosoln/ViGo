@@ -209,7 +209,7 @@ struct CompositionSession::Impl
 
 CompositionSession::CompositionSession(TypingMethod method,
                                        const std::vector<TextExpansion> &expansions) noexcept
-    : impl_(new (std::nothrow) Impl(method, expansions))
+    : impl_(new(std::nothrow) Impl(method, expansions))
 {
 }
 
@@ -237,8 +237,7 @@ std::optional<EditAction> CompositionSession::Preview(InputEvent event) const
     vigo_session_free(preview);
     if (action.has_value() && action->kind == EditAction::Kind::ReplaceBefore)
     {
-        action->expected_before =
-            TrailingScalars(impl_->committed_history, action->delete_scalars);
+        action->expected_before = TrailingScalars(impl_->committed_history, action->delete_scalars);
     }
     return action;
 }
@@ -256,8 +255,7 @@ std::optional<EditAction> CompositionSession::Process(InputEvent event)
     }
     if (action->kind == EditAction::Kind::ReplaceBefore)
     {
-        action->expected_before =
-            TrailingScalars(impl_->committed_history, action->delete_scalars);
+        action->expected_before = TrailingScalars(impl_->committed_history, action->delete_scalars);
         const std::size_t units =
             Utf16UnitsForTrailingScalars(impl_->committed_history, action->delete_scalars);
         impl_->committed_history.erase(impl_->committed_history.size() - units);
@@ -278,6 +276,15 @@ std::optional<EditAction> CompositionSession::Process(InputEvent event)
     }
     TrimHistory(impl_->committed_history);
     return action;
+}
+
+std::u16string_view CompositionSession::Text() const noexcept
+{
+    if (!valid())
+    {
+        return {};
+    }
+    return impl_->committed_history;
 }
 
 void CompositionSession::Reset() noexcept
