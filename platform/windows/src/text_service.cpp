@@ -512,7 +512,14 @@ HRESULT TextService::OnKeyDown(ITfContext *context, WPARAM w_param, LPARAM l_par
         return S_OK;
     }
 
-    const bool end_after = key.kind == NormalizedKind::Text && !ContinuesWord(key.scalar);
+    // A digit the core passes through is a literal (Telex clears the word on it),
+    // so commit it at once instead of holding it in the composition. A VNI tone
+    // digit comes back as a ReplaceBefore edit and must keep composing so the
+    // next modifier can still act on the syllable.
+    const bool passthrough_digit = action->kind == EditAction::Kind::PassThrough &&
+                                   key.scalar >= U'0' && key.scalar <= U'9';
+    const bool end_after = key.kind == NormalizedKind::Text &&
+                           (!ContinuesWord(key.scalar) || passthrough_digit);
     const std::optional<char32_t> retry_scalar =
         key.kind == NormalizedKind::Text ? std::optional<char32_t>(key.scalar) : std::nullopt;
     if (ApplySessionText(context, expected, end_after, retry_scalar))
